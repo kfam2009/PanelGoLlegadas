@@ -14,7 +14,7 @@ import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.1';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -38,7 +38,7 @@ const DEFAULTS = {
   textos: { llegada: 'LLEGADA', llegadas: 'LLEGADAS', tiempo: 'TIEMPO', posiciones: 'POSICIONES', esperando: 'Esperando llegadas...' },
   llegada: { segundos: 8, agrupar: true },
   aire: { llegadas: true, posiciones: false, podio: false, reloj: false, logo: false },
-  posiciones: { dist: '', cat: '', sexo: '', lado: 'der', filas: 10, segundos: 8, titulo: '' },
+  posiciones: { dist: '', cat: '', sexo: '', lado: 'der', filas: 10, segundos: 8, titulo: '', logo: 'arriba' },
   podio: { dist: '', cat: '', sexo: '' },
   reloj: { inicio: 0, pausa: 0, lado: 'izq', titulo: 'TIEMPO' },
   logos: { productora: '', crono: '', sponsors: [] },
@@ -136,6 +136,7 @@ async function setConfig(d) {
     const P = config.posiciones, x = d.posiciones;
     for (const k of ['dist', 'cat', 'sexo', 'titulo']) if (k in x) P[k] = str(x[k], 60);
     if (['der', 'izq', 'cen'].includes(x.lado)) P.lado = x.lado;
+    if (['arriba', 'titulo', 'no'].includes(x.logo)) P.logo = x.logo;
     if ('filas' in x) P.filas = numero(x.filas, 3, 15, 10);
     if ('segundos' in x) P.segundos = numero(x.segundos, 3, 60, 8);
   }

@@ -56,7 +56,10 @@
   .tb .hd{display:flex;align-items:center;gap:16px;background:var(--c1);color:var(--ctx);padding:10px 20px;min-height:66px}
   .tb .hd .ti{font-weight:900;font-size:34px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
   .tb .hd .pg{font-weight:800;font-size:22px;opacity:.7}
-  .tb .hd img{height:54px;max-width:150px;object-fit:contain}
+  .tb .hd .lgc{align-self:stretch;display:flex;align-items:center;background:var(--c2);margin:-10px -20px -10px 4px;padding:0 18px}
+  .tb .hd .lgc img{height:52px;max-width:170px;object-fit:contain}
+  .tb .lgb{display:flex;align-items:center;justify-content:center;background:var(--c2);padding:14px 20px;border-bottom:2px solid rgba(255,255,255,.06)}
+  .tb .lgb img{height:84px;max-width:80%;object-fit:contain}
   .tb .sub{background:var(--c3);color:var(--sub);font-weight:800;font-size:20px;letter-spacing:2px;padding:7px 20px}
   .tb .rw{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;height:58px;border-top:2px solid rgba(255,255,255,.05)}
   #pos.cen .tb .rw{grid-template-columns:96px minmax(0,1fr) 260px 200px auto;height:62px}
@@ -173,16 +176,16 @@ function paginas() {
 function dibujarPos(anim) {
   const P = G.posiciones, el = $('#pos'), cen = P.lado === 'cen';
   el.className = 'capa ' + (P.lado || 'der') + (el.classList.contains('on') ? ' on' : '');
-  const pags = paginas(); posPag %= pags.length; const p = pags[posPag];
+  const pags = paginas(); posPag %= pags.length; const p = pags[posPag], lg = G.logos.productora ? esc(G.logos.productora) : '';
   const extra = c => cen ? `<span class="x">${esc(c.club || c.cat || '')}</span><span class="x">${esc(c.dist !== 'General' ? c.dist : '')}</span>` : '';
-  el.innerHTML = `<div class="tb${anim ? ' anim' : ''}"><div class="hd"><span class="ti">${esc(p.titulo)}</span>${p.pg ? `<span class="pg">${p.pg}</span>` : ''}${G.logos.productora ? `<img src="${esc(G.logos.productora)}" alt="">` : ''}</div>` +
+  el.innerHTML = `<div class="tb${anim ? ' anim' : ''}">${lg && P.logo === 'arriba' ? `<div class="lgb"><img src="${lg}" alt=""></div>` : ''}<div class="hd"><span class="ti">${esc(p.titulo)}</span>${p.pg ? `<span class="pg">${p.pg}</span>` : ''}${lg && P.logo === 'titulo' ? `<span class="lgc"><img src="${lg}" alt=""></span>` : ''}</div>` +
     (p.subtitulo ? `<div class="sub">${esc(p.subtitulo)}</div>` : '') +
     (p.rows.length ? p.rows.map((c, i) => `<div class="rw${c.puesto <= 3 ? ' podio' : ''}" style="animation-delay:${i * .04}s"><b>${c.puesto}</b><span class="n">${esc(c.nombre)}</span>${extra(c)}<span class="t">${esc(c.tiempo)}</span></div>`).join('') : `<div class="vac">${esc(G.textos.esperando)}</div>`) +
     `<div class="ft">${G.logos.sponsors?.length ? `<img src="${esc(G.logos.sponsors[posPag % G.logos.sponsors.length])}" alt="">` : ''}</div></div>`;
 }
 function posiciones(on) {
   const el = $('#pos'), P = G.posiciones;
-  const key = JSON.stringify([P.lado, P.filas, P.grupos?.map(g => [g.titulo, g.subtitulo, g.tabla.map(c => [c.id, c.puesto, c.tiempo])]), G.logos, G.tema]);
+  const key = JSON.stringify([P.lado, P.logo, P.filas, P.grupos?.map(g => [g.titulo, g.subtitulo, g.tabla.map(c => [c.id, c.puesto, c.tiempo])]), G.logos, G.tema]);
   if (key !== posKey) { posKey = key; dibujarPos(false); }
   if (on && !el.classList.contains('on')) { posPag = 0; dibujarPos(true); el.classList.add('on'); clearInterval(posTimer); posTimer = setInterval(() => { posPag++; dibujarPos(true); }, (P.segundos || 8) * 1000); }
   if (!on && el.classList.contains('on')) { el.classList.remove('on'); clearInterval(posTimer); }

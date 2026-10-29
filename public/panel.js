@@ -54,7 +54,7 @@ function render() {
   const dists = st.distancias.map(d => d.dist);
   opciones('#pDist', dists, 'Todas (rotan)', C.posiciones.dist); opciones('#pCat', st.categorias, 'Todas', C.posiciones.cat); opciones('#pSexo', st.sexos, 'Todos', C.posiciones.sexo);
   opciones('#dDist', dists, dists.length ? 'La primera' : 'General', C.podio.dist); opciones('#dCat', st.categorias, 'General', C.podio.cat); opciones('#dSexo', st.sexos, 'Todos', C.podio.sexo);
-  setVal('#pLado', C.posiciones.lado); setVal('#pFilas', C.posiciones.filas); setVal('#rLado', C.reloj.lado);
+  setVal('#pLado', C.posiciones.lado); setVal('#pLogo', C.posiciones.logo); setVal('#pFilas', C.posiciones.filas); setVal('#rLado', C.reloj.lado);
   $('#relInfo').textContent = C.reloj.inicio ? 'largó a las ' + new Date(C.reloj.inicio).toLocaleTimeString() : 'sin largada';
   // Diseño
   if (changed('temas', [Object.keys(st.temas), Object.keys(C.temasGuardados)]) && !focused('#temaBase')) {
@@ -113,7 +113,7 @@ $('#clear').onclick = () => { if (confirm('¿Borrar todos los corredores guardad
 for (const b of $$('.sw')) b.onclick = () => cfg({ aire: { [b.dataset.aire]: !st.config.aire[b.dataset.aire] } });
 $('#llSeg').onchange = () => cfg({ llegada: { segundos: Number($('#llSeg').value) } });
 $('#llAgr').onchange = () => cfg({ llegada: { agrupar: $('#llAgr').checked } });
-for (const [id, k] of [['#pDist', 'dist'], ['#pCat', 'cat'], ['#pSexo', 'sexo'], ['#pLado', 'lado'], ['#pFilas', 'filas'], ['#pTitulo', 'titulo']]) $(id).onchange = () => cfg({ posiciones: { [k]: $(id).value } });
+for (const [id, k] of [['#pDist', 'dist'], ['#pCat', 'cat'], ['#pSexo', 'sexo'], ['#pLado', 'lado'], ['#pFilas', 'filas'], ['#pLogo', 'logo'], ['#pTitulo', 'titulo']]) $(id).onchange = () => cfg({ posiciones: { [k]: $(id).value } });
 for (const [id, k] of [['#dDist', 'dist'], ['#dCat', 'cat'], ['#dSexo', 'sexo']]) $(id).onchange = () => cfg({ podio: { [k]: $(id).value } });
 $('#largar').onclick = () => { if (!st.config.reloj.inicio || confirm('¿Largar de nuevo el reloj desde cero?')) act('config', { reloj: { accion: 'largar' } }, 'Reloj largado'); };
 $('#hora').onchange = () => $('#hora').value && act('config', { reloj: { accion: 'hora', hora: $('#hora').value.length === 5 ? $('#hora').value + ':00' : $('#hora').value } }, 'Largada a las ' + $('#hora').value);
