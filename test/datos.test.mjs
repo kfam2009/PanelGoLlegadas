@@ -7,7 +7,7 @@ import path from 'node:path';
 import { leerTabla, detectarColumnas, aCorredor, direccionDatos } from '../lib/detectar.mjs';
 import { Motor } from '../lib/motor.mjs';
 import { crearFuente } from '../lib/fuentes.mjs';
-import { fakeRaceResult, CORREDORES } from './fake-raceresult.mjs';
+import { fakeRaceResult, CORREDORES, DATA } from './fake-raceresult.mjs';
 
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const until = async (fn, ms = 5000) => { const t = Date.now(); while (!(await fn())) { if (Date.now() - t > ms) throw Error('tiempo agotado'); await wait(50); } };
@@ -81,5 +81,25 @@ test('RaceResult: en vivo, simular y cargar todos', async () => {
     await F.cargarTodos(300);
     assert.equal(M.resumen().total, 4); assert.equal(M.resumen().llegaron, 3);
     assert.equal(M.evento, 'CARRERA DE PRUEBA');
+  } finally { F.desconectar(); rr.close(); }
+});
+
+test('RaceResult formato nuevo (DataFields): lo que ya llegó, en vivo y respaldo', async () => {
+  const rr = fakeRaceResult({ nuevo: true }); await new Promise(r => rr.listen(0, '127.0.0.1', r));
+  const M = new Motor({ dataDir: tmp() }); await M.ready;
+  const F = crearFuente(`http://127.0.0.1:${rr.address().port}/presenters/?event=1&n=X&k=CLAVE`, M);
+  try {
+    F.conectar();
+    await until(() => M.corredores.size === 2 && F.estado.conectado);
+    assert.equal(M.evento, 'DESAFIO VERTICE SUR'); assert.equal(M.feed.length, 0);
+    const a = M.corredores.get('rr281');
+    assert.deepEqual([a.nombre, a.bib, a.dist, a.cat, a.catPos, a.sexoPos, a.club, a.tiempo, a.finished], ['Leon Marcos', '35', 'MTB', 'Master A2', 1, 1, 'Bariloche', '2:16:37', true]);
+    assert.deepEqual(M.recientes().map(c => c.nombre), ['Ignacio Sampallo', 'Leon Marcos']);
+    const nueva = ['77', '300', '77', 'Perez, Ana', '', 'ARG', 'MTB (2°)', 'Elite (1°)', 'Neuquen', '2:20:00,10'];
+    rr.cruza(nueva);
+    await until(() => M.feed.length === 1);
+    assert.equal(M.feedPantalla()[0].c.nombre, 'Ana Perez'); assert.equal(M.feedPantalla()[0].c.puesto, 2);
+    await F.simular('35'); assert.equal(M.feed.length, 2);
+    assert.match(F.info().columnas.map(c => c.titulo + '=' + c.campo).join(), /LLEGADA=nombre.*Tiempo=tiempo/);
   } finally { F.desconectar(); rr.close(); }
 });
