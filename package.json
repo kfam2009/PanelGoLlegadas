@@ -1,0 +1,9 @@
+{
+  "name": "panelgo-llegadas",
+  "version": "0.1.0",
+  "description": "PanelGo Llegadas: gráficos de llegadas y posiciones para transmisiones de carreras (vMix, OBS y pantalla)",
+  "type": "module",
+  "private": true,
+  "scripts": { "start": "node server.mjs", "test": "node --test test/*.test.mjs" },
+  "engines": { "node": ">=20.6" }
+}

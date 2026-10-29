@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PanelGo Llegadas · Gráficos</title>
+<style>
+  /* Graficos para vMix / OBS: fondo transparente, diseno 1920x1080 que se escala a la ventana.
+     Capas: llegada (zocalo), posiciones, podio, reloj y logo. Se prenden desde el panel. */
+  :root{--c1:#ffd400;--c2:#0f131b;--c3:#1b2130;--tx:#fff;--sub:#aab3c2;--ctx:#000;--font:"Segoe UI",Arial,sans-serif;--r:10px;--esc:1;--m:70px}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+  body.negro{background:#000}body.verde{background:#00b140}body.cuadros{background:repeating-conic-gradient(#3a3f4a 0 25%,#2a2e36 0 50%) 0 0/40px 40px}
+  #st{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;font-family:var(--font);color:var(--tx)}
+  .may{text-transform:uppercase}
+  .capa{position:absolute;opacity:0;visibility:hidden;transition:opacity .45s,visibility 0s .45s}
+  .capa.on{opacity:1;visibility:visible;transition:opacity .45s}
+
+  /* ---------- Llegada (zocalo) ---------- */
+  #lleg{left:var(--m);bottom:var(--m);transform:scale(var(--esc));transform-origin:0 100%}
+  .z{display:flex;flex-direction:column;align-items:flex-start;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
+  .z .tag{display:flex;align-items:center;gap:14px;background:var(--c1);color:var(--ctx);font-weight:900;font-size:26px;letter-spacing:3px;padding:6px 18px 5px;border-radius:var(--r) var(--r) 0 0;transform:translateY(100%);opacity:0}
+  .z .tag i{font-style:normal;font-weight:800;letter-spacing:1px;opacity:.75}
+  .z .bar{display:flex;align-items:stretch;height:132px;clip-path:inset(0 100% 0 0);border-radius:0 var(--r) var(--r) var(--r);overflow:hidden}
+  .z .p{min-width:132px;padding:0 18px;display:flex;align-items:center;justify-content:center;background:var(--c1);color:var(--ctx);font-weight:900;font-size:84px;letter-spacing:-3px}
+  .z .p small{font-size:.45em;letter-spacing:0;margin-left:2px;align-self:flex-start;margin-top:30px}
+  .z .mid{background:var(--c2);display:flex;flex-direction:column;justify-content:center;padding:0 34px;min-width:620px;max-width:980px}
+  .z .n{font-weight:900;font-size:60px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .z .s{font-weight:700;font-size:28px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+  .z .s b{color:var(--c1)}
+  .z .t{background:var(--c3);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;min-width:230px}
+  .z .t span{font-size:20px;font-weight:800;letter-spacing:3px;color:var(--sub)}
+  .z .t b{font-size:62px;font-weight:900;color:var(--c1);font-variant-numeric:tabular-nums;line-height:1}
+  .z .lg{background:#fff;display:flex;align-items:center;justify-content:center;padding:0 22px;width:180px}
+  .z .lg img{max-width:100%;max-height:96px;object-fit:contain}
+  .z .lg:empty{display:none}
+  .on .z .tag{animation:tagIn .4s .1s ease-out forwards}
+  .on .z .bar{animation:wipe .6s cubic-bezier(.7,0,.2,1) forwards}
+  .on .z .p{animation:pop .55s .45s cubic-bezier(.2,1.6,.4,1) both}
+  @keyframes tagIn{to{transform:none;opacity:1}}
+  @keyframes wipe{to{clip-path:inset(0 0 0 0)}}
+  @keyframes pop{from{transform:scale(.4);opacity:0}}
+  /* varias llegadas juntas */
+  .g .bar{display:block;height:auto;background:var(--c2);min-width:1000px}
+  .g .row{display:grid;grid-template-columns:96px minmax(0,1fr) 190px 210px;align-items:center;height:68px;border-bottom:2px solid rgba(255,255,255,.06);opacity:0;transform:translateX(-40px)}
+  .on .g .row{animation:rowIn .45s ease-out forwards}
+  @keyframes rowIn{to{opacity:1;transform:none}}
+  .g .row .gp{height:100%;display:flex;align-items:center;justify-content:center;background:var(--c1);color:var(--ctx);font-size:40px;font-weight:900}
+  .g .row .gn{font-size:36px;font-weight:900;padding:0 24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .g .row .gd{font-size:26px;font-weight:700;color:var(--sub)}
+  .g .row .gt{font-size:38px;font-weight:900;color:var(--c1);text-align:right;padding-right:26px;font-variant-numeric:tabular-nums}
+
+  /* ---------- Posiciones ---------- */
+  #pos{top:var(--m);width:640px;transform:scale(var(--esc))}
+  #pos.der{right:var(--m);transform-origin:100% 0}#pos.izq{left:var(--m);transform-origin:0 0}
+  #pos.cen{left:50%;width:1100px;margin-left:-550px;transform-origin:50% 0}
+  .tb{background:var(--c2);border-radius:var(--r);overflow:hidden;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
+  .tb .hd{display:flex;align-items:center;gap:16px;background:var(--c1);color:var(--ctx);padding:10px 20px;min-height:66px}
+  .tb .hd .ti{font-weight:900;font-size:34px;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .tb .hd .pg{font-weight:800;font-size:22px;opacity:.7}
+  .tb .hd img{height:54px;max-width:150px;object-fit:contain}
+  .tb .sub{background:var(--c3);color:var(--sub);font-weight:800;font-size:20px;letter-spacing:2px;padding:7px 20px}
+  .tb .rw{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;height:58px;border-top:2px solid rgba(255,255,255,.05)}
+  #pos.cen .tb .rw{grid-template-columns:96px minmax(0,1fr) 260px 200px auto;height:62px}
+  .tb .rw:nth-child(even){background:rgba(255,255,255,.035)}
+  .tb .rw b{height:100%;display:flex;align-items:center;justify-content:center;background:var(--c3);color:var(--c1);font-size:30px;font-weight:900}
+  .tb .rw.podio b{background:var(--c1);color:var(--ctx)}
+  .tb .rw .n{font-size:28px;font-weight:800;padding:0 18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb .rw .x{font-size:22px;font-weight:700;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:14px}
+  .tb .rw .t{font-size:30px;font-weight:900;color:var(--tx);font-variant-numeric:tabular-nums;padding-right:20px;text-align:right}
+  .tb .ft{display:flex;align-items:center;justify-content:center;height:70px;background:#fff}
+  .tb .ft img{max-height:52px;max-width:80%;object-fit:contain}
+  .tb .ft:empty{display:none}
+  .tb .vac{padding:30px 20px;color:var(--sub);font-size:26px;font-weight:700;text-align:center}
+  .tb.anim .rw{animation:rowIn .4s ease-out both}
+
+  /* ---------- Podio ---------- */
+  #pod{left:50%;bottom:var(--m);width:1300px;margin-left:-650px;transform:scale(var(--esc));transform-origin:50% 100%}
+  .pd .hd{margin:0 auto 18px;width:max-content;background:var(--c1);color:var(--ctx);font-weight:900;font-size:38px;letter-spacing:2px;padding:10px 34px;border-radius:var(--r)}
+  .pd .cols{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:18px}
+  .pd .c{display:flex;flex-direction:column;align-items:stretch;opacity:0;transform:translateY(60px)}
+  .on .pd .c{animation:up .6s cubic-bezier(.2,1.2,.4,1) forwards}
+  @keyframes up{to{opacity:1;transform:none}}
+  .pd .nm{background:var(--c2);border-radius:var(--r) var(--r) 0 0;padding:16px 18px;text-align:center}
+  .pd .nm .n{font-size:36px;font-weight:900;line-height:1.1}
+  .pd .nm .t{font-size:34px;font-weight:900;color:var(--c1);font-variant-numeric:tabular-nums;margin-top:4px}
+  .pd .nm .x{font-size:22px;font-weight:700;color:var(--sub);margin-top:2px}
+  .pd .bl{background:var(--c1);color:var(--ctx);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:110px;border-radius:0 0 var(--r) var(--r)}
+  .pd .c1 .bl{height:230px}.pd .c2 .bl{height:170px;filter:brightness(.82)}.pd .c3 .bl{height:130px;filter:brightness(.68)}
+
+  /* ---------- Reloj ---------- */
+  #rel{top:var(--m);transform:scale(var(--esc))}
+  #rel.izq{left:var(--m);transform-origin:0 0}#rel.der{right:var(--m);transform-origin:100% 0}
+  .rl{display:flex;align-items:stretch;border-radius:var(--r);overflow:hidden;filter:drop-shadow(0 8px 20px rgba(0,0,0,.45))}
+  .rl span{background:var(--c1);color:var(--ctx);font-weight:900;font-size:22px;letter-spacing:2px;display:flex;align-items:center;padding:0 16px;writing-mode:horizontal-tb}
+  .rl b{background:var(--c2);font-size:56px;font-weight:900;font-variant-numeric:tabular-nums;padding:6px 22px;min-width:250px;text-align:center}
+
+  /* ---------- Logo (marca) ---------- */
+  #bug{top:var(--m);transform-origin:100% 0}
+  #bug.der{right:var(--m)}#bug.izq{left:var(--m);transform-origin:0 0}
+  #bug img{height:110px;max-width:340px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+</style>
+</head>
+<body>
+<div id="st">
+  <div class="capa" id="lleg"></div>
+  <div class="capa der" id="pos"></div>
+  <div class="capa" id="pod"></div>
+  <div class="capa izq" id="rel"><div class="rl"><span id="relT">TIEMPO</span><b id="relV">0:00:00</b></div></div>
+  <div class="capa der" id="bug"><img id="bugI" alt=""></div>
+</div>
+<script>
+const $ = s => document.querySelector(s), wait = ms => new Promise(r => setTimeout(r, ms));
+const Q = new URLSearchParams(location.search);
+const SOLO = Q.get('capa');              // una sola capa (para cargarla como input aparte); siempre visible salvo la llegada
+if (Q.get('fondo')) document.body.classList.add(Q.get('fondo'));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+let G = null, lastSeq = null, queue = [], offset = 0;
+
+function fit() { $('#st').style.transform = `scale(${innerWidth / 1920},${innerHeight / 1080})`; }
+addEventListener('resize', fit); fit();
+
+function tema(t) {
+  const r = document.documentElement.style;
+  for (const [k, v] of Object.entries({ '--c1': t.c1, '--c2': t.c2, '--c3': t.c3, '--tx': t.tx, '--sub': t.sub, '--ctx': t.ctx })) if (v) r.setProperty(k, v);
+  r.setProperty('--font', `"${t.fuente}", "Segoe UI", Arial, sans-serif`);
+  r.setProperty('--r', (t.redondeo ?? 10) + 'px'); r.setProperty('--esc', t.escala || 1); r.setProperty('--m', (t.margen ?? 70) + 'px');
+  $('#st').classList.toggle('may', t.mayusculas !== false);
+}
+const sub = c => [c.dist && c.dist !== 'General' && `<b>${esc(c.dist)}</b>`, c.cat && esc(c.cat) + (c.catPos ? ` (${c.catPos}°)` : ''), c.club && esc(c.club)].filter(Boolean).join(' · ');
+const logoZ = () => { const l = G.logos; const s = l.sponsors?.length ? l.sponsors[Math.floor(Date.now() / 8000) % l.sponsors.length] : l.crono; return s ? `<img src="${esc(s)}" alt="">` : ''; };
+
+// ---------- Llegadas ----------
+async function mostrarLlegada(c) {
+  const el = $('#lleg');
+  el.innerHTML = `<div class="z"><div class="tag">${esc(G.textos.llegada)}${c.bib ? `<i>#${esc(c.bib)}</i>` : ''}</div><div class="bar">
+    <div class="p">${c.puesto ? c.puesto + '<small>°</small>' : '✓'}</div>
+    <div class="mid"><div class="n">${esc(c.nombre)}</div><div class="s">${sub(c)}</div></div>
+    <div class="t"><span>${esc(G.textos.tiempo)}</span><b>${esc(c.tiempo)}</b></div><div class="lg">${logoZ()}</div></div></div>`;
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  await wait((G.llegada.segundos || 8) * 1000);
+  el.classList.remove('on'); await wait(600);
+}
+async function mostrarGrupo(l) {
+  const el = $('#lleg');
+  el.innerHTML = `<div class="z g"><div class="tag">${esc(G.textos.llegadas)}<i>${l.length}</i></div><div class="bar">` +
+    l.map((c, i) => `<div class="row" style="animation-delay:${.35 + i * .12}s"><b class="gp">${c.puesto || '✓'}</b><span class="gn">${esc(c.nombre)}</span><span class="gd">${esc(c.dist !== 'General' ? c.dist : c.cat || '')}</span><span class="gt">${esc(c.tiempo)}</span></div>`).join('') + '</div></div>';
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  await wait(((G.llegada.segundos || 8) + 3) * 1000);
+  el.classList.remove('on'); await wait(600);
+}
+let corriendo = false;
+async function cola() {
+  if (corriendo) return; corriendo = true;
+  try {
+    while (queue.length) {
+      if (!G.aire.llegadas && SOLO !== 'llegada') { queue = []; break; }
+      if (queue.length >= 3 && G.llegada.agrupar !== false) await mostrarGrupo(queue.splice(0, 5).sort((a, b) => (a.puesto ?? 1e9) - (b.puesto ?? 1e9)));
+      else await mostrarLlegada(queue.shift());
+    }
+  } finally { corriendo = false; }
+}
+
+// ---------- Posiciones (paginas que rotan) ----------
+let posKey = '', posPag = 0, posTimer = null;
+// paginas: cada distancia (o la elegida) en paginas de N filas
+function paginas() {
+  const P = G.posiciones, filas = P.filas || 10, out = [];
+  for (const g of P.grupos || []) {
+    const n = Math.max(1, Math.ceil(g.tabla.length / filas));
+    for (let i = 0; i < n; i++) out.push({ ...g, rows: g.tabla.slice(i * filas, i * filas + filas), pg: n > 1 ? `${i + 1}/${n}` : '' });
+  }
+  return out.length ? out : [{ titulo: P.titulo || G.textos.posiciones, rows: [], pg: '' }];
+}
+function dibujarPos(anim) {
+  const P = G.posiciones, el = $('#pos'), cen = P.lado === 'cen';
+  el.className = 'capa ' + (P.lado || 'der') + (el.classList.contains('on') ? ' on' : '');
+  const pags = paginas(); posPag %= pags.length; const p = pags[posPag];
+  const extra = c => cen ? `<span class="x">${esc(c.club || c.cat || '')}</span><span class="x">${esc(c.dist !== 'General' ? c.dist : '')}</span>` : '';
+  el.innerHTML = `<div class="tb${anim ? ' anim' : ''}"><div class="hd"><span class="ti">${esc(p.titulo)}</span>${p.pg ? `<span class="pg">${p.pg}</span>` : ''}${G.logos.productora ? `<img src="${esc(G.logos.productora)}" alt="">` : ''}</div>` +
+    (p.subtitulo ? `<div class="sub">${esc(p.subtitulo)}</div>` : '') +
+    (p.rows.length ? p.rows.map((c, i) => `<div class="rw${c.puesto <= 3 ? ' podio' : ''}" style="animation-delay:${i * .04}s"><b>${c.puesto}</b><span class="n">${esc(c.nombre)}</span>${extra(c)}<span class="t">${esc(c.tiempo)}</span></div>`).join('') : `<div class="vac">${esc(G.textos.esperando)}</div>`) +
+    `<div class="ft">${G.logos.sponsors?.length ? `<img src="${esc(G.logos.sponsors[posPag % G.logos.sponsors.length])}" alt="">` : ''}</div></div>`;
+}
+function posiciones(on) {
+  const el = $('#pos'), P = G.posiciones;
+  const key = JSON.stringify([P.lado, P.filas, P.grupos?.map(g => [g.titulo, g.subtitulo, g.tabla.map(c => [c.id, c.puesto, c.tiempo])]), G.logos, G.tema]);
+  if (key !== posKey) { posKey = key; dibujarPos(false); }
+  if (on && !el.classList.contains('on')) { posPag = 0; dibujarPos(true); el.classList.add('on'); clearInterval(posTimer); posTimer = setInterval(() => { posPag++; dibujarPos(true); }, (P.segundos || 8) * 1000); }
+  if (!on && el.classList.contains('on')) { el.classList.remove('on'); clearInterval(posTimer); }
+}
+
+// ---------- Podio ----------
+let podKey = '';
+function podio(on) {
+  const el = $('#pod'), P = G.podio, t = P.tabla || [];
+  const key = JSON.stringify([P.titulo, t.map(c => [c.id, c.tiempo])]);
+  if (key !== podKey || (on && !el.classList.contains('on'))) {
+    podKey = key;
+    const col = (c, k, d) => `<div class="c c${k}" style="animation-delay:${d}s"><div class="nm"><div class="n">${esc(c?.nombre || '-')}</div><div class="t">${esc(c?.tiempo || '')}</div><div class="x">${esc(c?.club || c?.cat || '')}</div></div><div class="bl">${k}°</div></div>`;
+    el.innerHTML = `<div class="pd"><div class="hd">${esc(P.titulo)}</div><div class="cols">${col(t[1], 2, .3)}${col(t[0], 1, .6)}${col(t[2], 3, 0)}</div></div>`;
+    if (on) { el.classList.remove('on'); void el.offsetWidth; }
+  }
+  el.classList.toggle('on', on);
+}
+
+// ---------- Reloj ----------
+function reloj() {
+  const R = G.reloj; if (!R) return;
+  $('#rel').className = 'capa ' + (R.lado || 'izq') + ($('#rel').classList.contains('on') ? ' on' : '');
+  $('#relT').textContent = R.titulo || 'TIEMPO';
+  let s = R.inicio ? Math.max(0, Math.floor((Date.now() + offset - R.inicio) / 1000)) : 0;
+  if (R.pausa) s = Math.floor(R.pausa / 1000);
+  $('#relV').textContent = `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+setInterval(() => G && reloj(), 250);
+
+function aplicar() {
+  tema(G.tema);
+  const A = G.aire, solo = k => SOLO ? SOLO === k : A[k];
+  posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones));
+  podio(Boolean(SOLO ? SOLO === 'podio' : A.podio));
+  reloj(); $('#rel').classList.toggle('on', Boolean(solo('reloj')));
+  const bug = G.logos.productora; $('#bugI').src = bug || '';
+  $('#bug').className = 'capa ' + (G.tema.logoLado || 'der') + (bug && solo('logo') ? ' on' : '');
+  if (A.posiciones && !SOLO && (G.posiciones.lado || 'der') === (G.tema.logoLado || 'der')) $('#bug').classList.remove('on'); // no se pisan
+}
+
+async function poll() {
+  try {
+    const t0 = Date.now();
+    G = await fetch('/api/graficos', { cache: 'no-store', signal: AbortSignal.timeout(3000) }).then(r => r.json());
+    offset = G.ahora - Math.round((t0 + Date.now()) / 2);
+    aplicar();
+    if (lastSeq === null || G.seq < lastSeq) lastSeq = G.seq;
+    for (const f of G.feed) if (f.seq > lastSeq && (!SOLO || SOLO === 'llegada')) queue.push(f.c);
+    lastSeq = Math.max(lastSeq, G.seq); cola();
+  } catch (e) {}
+  setTimeout(poll, 400);
+}
+poll();
+</script>
+</body>
+</html>

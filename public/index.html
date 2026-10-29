@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PanelGo Llegadas</title>
+<link rel="stylesheet" href="panel.css">
+<script type="module" src="panel.js"></script>
+</head>
+<body>
+<header class="top">
+  <img class="brand" src="img/panelgo.png" alt="Panel Go">
+  <div class="title"><b>PANELGO LLEGADAS</b><span id="ver"></span><span id="urls"></span></div>
+  <span id="conn" class="pill">SIN DATOS</span>
+</header>
+
+<main>
+  <!-- Columna 1: datos y llegadas -->
+  <div class="col">
+    <section class="card">
+      <div class="head"><h2>Resultados</h2><span id="tipo" class="muted"></span></div>
+      <div class="row"><input id="link" autocomplete="off" placeholder="Link del cronometraje: presenter de RaceResult, página de resultados, planilla de Google, CSV o JSON"><button id="saveLink" class="btn go">CONECTAR</button></div>
+      <div class="row small"><label class="inl">Revisar cada <input id="intervalo" type="number" min="2" max="120"> seg</label><span id="info" class="muted"></span></div>
+      <details id="colsBox"><summary>Columnas detectadas <span id="colsRes" class="muted"></span></summary><div id="cols" class="cols"></div>
+        <div class="row"><button id="saveCols" class="btn mini go">GUARDAR COLUMNAS</button><button id="autoCols" class="btn mini">VOLVER A DETECTAR</button></div></details>
+    </section>
+    <section class="card grow">
+      <div class="head"><h2>Llegadas</h2><span id="cuenta" class="muted"></span></div>
+      <div id="list" class="list scroll"></div>
+      <div class="row"><input id="bib" class="bib" placeholder="Dorsal" inputmode="numeric" autocomplete="off"><button id="sim" class="btn go" title="Muestra la llegada de ese dorsal (o de uno al azar) para probar">PROBAR</button><button id="scan" class="btn" title="Trae todos los resultados que ya existan">CARGAR TODOS</button><button id="clear" class="btn del" title="Para empezar un evento nuevo">BORRAR</button></div>
+    </section>
+  </div>
+
+  <!-- Columna 2: vista y control al aire -->
+  <div class="col">
+    <section class="card">
+      <div class="head"><h2>Vista</h2><span class="muted">así sale en vMix / OBS</span></div>
+      <div class="prev"><iframe id="preview" src="graficos.html?fondo=cuadros" title="Vista de los gráficos" tabindex="-1"></iframe></div>
+    </section>
+    <section class="card grow">
+      <div class="head"><h2>Al aire</h2></div>
+      <div class="aire scroll">
+        <div class="ctl"><button class="sw" data-aire="llegadas">LLEGADAS<small>automático al cruzar</small></button>
+          <div class="opts"><label>Segundos<input id="llSeg" type="number" min="3" max="60"></label><label class="chk"><input id="llAgr" type="checkbox">juntar 3 o más</label></div></div>
+        <div class="ctl"><button class="sw" data-aire="posiciones">POSICIONES<small>rotan por páginas</small></button>
+          <div class="opts"><label>Distancia<select id="pDist"></select></label><label>Categoría<select id="pCat"></select></label><label>Sexo<select id="pSexo"></select></label><label>Lugar<select id="pLado"><option value="der">Derecha</option><option value="izq">Izquierda</option><option value="cen">Centro (grande)</option></select></label><label>Filas<input id="pFilas" type="number" min="3" max="15"></label></div></div>
+        <div class="ctl"><button class="sw" data-aire="podio">PODIO<small>los 3 primeros</small></button>
+          <div class="opts"><label>Distancia<select id="dDist"></select></label><label>Categoría<select id="dCat"></select></label><label>Sexo<select id="dSexo"></select></label></div></div>
+        <div class="ctl"><button class="sw" data-aire="reloj">RELOJ<small id="relInfo">tiempo de carrera</small></button>
+          <div class="opts"><button id="largar" class="btn mini go">LARGAR AHORA</button><label class="inl">o a las <input id="hora" type="time" step="1"></label><button id="cero" class="btn mini">A CERO</button><label>Lugar<select id="rLado"><option value="izq">Izquierda</option><option value="der">Derecha</option></select></label></div></div>
+        <div class="ctl"><button class="sw" data-aire="logo">LOGO<small>de la productora, fijo</small></button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Columna 3: diseño, logos y salidas -->
+  <div class="col">
+    <section class="card grow">
+      <nav class="tabs"><button data-tab="dis" class="on">DISEÑO</button><button data-tab="log">LOGOS</button><button data-tab="sal">vMix / OBS</button></nav>
+      <div class="tab scroll" id="tab-dis">
+        <div class="opts"><label class="grow">Estilo<select id="temaBase"></select></label><button id="guardarTema" class="btn mini" title="Guarda los colores actuales con un nombre">GUARDAR ESTILO</button></div>
+        <div class="colores">
+          <label>Principal<input type="color" data-t="c1"></label><label>Texto sobre principal<input type="color" data-t="ctx"></label>
+          <label>Fondo<input type="color" data-t="c2"></label><label>Fondo 2<input type="color" data-t="c3"></label>
+          <label>Texto<input type="color" data-t="tx"></label><label>Texto suave<input type="color" data-t="sub"></label>
+        </div>
+        <div class="opts"><label class="grow">Letra<select id="fuente"></select></label><label class="chk"><input id="mayus" type="checkbox">MAYÚSCULAS</label></div>
+        <div class="opts"><label>Tamaño<input id="escala" type="range" min="0.5" max="1.6" step="0.05"></label><label>Margen<input id="margen" type="range" min="0" max="200" step="5"></label><label>Esquinas<input id="redondeo" type="range" min="0" max="40" step="1"></label></div>
+        <h3>Textos</h3>
+        <div class="opts textos"><label>Cartel<input data-x="llegada"></label><label>Varios<input data-x="llegadas"></label><label>Tiempo<input data-x="tiempo"></label><label>Posiciones<input data-x="posiciones"></label><label class="grow">Sin datos<input data-x="esperando"></label></div>
+        <div class="opts"><label class="grow">Título fijo de posiciones (vacío = automático)<input id="pTitulo"></label><label>Título reloj<input id="rTitulo"></label></div>
+      </div>
+      <div class="tab scroll" id="tab-log" hidden>
+        <div class="lgs">
+          <div class="lg"><b>Productora</b><span class="muted">arriba en las posiciones y como logo fijo</span><div class="slot" data-logo="productora"></div></div>
+          <div class="lg"><b>Cronometraje</b><span class="muted">en el cartel de llegada</span><div class="slot" data-logo="crono"></div></div>
+        </div>
+        <div class="head"><b>Sponsors</b><label class="btn mini">+ AGREGAR<input id="spFile" type="file" accept="image/*" multiple hidden></label></div>
+        <p class="muted">Rotan en el cartel de llegada (en lugar del cronometraje) y abajo de las posiciones.</p>
+        <div id="sponsors" class="sps"></div>
+      </div>
+      <div class="tab scroll" id="tab-sal" hidden>
+        <div class="out">
+          <div class="head"><b>vMix</b><span id="vmixRes" class="muted"></span></div>
+          <div class="opts"><label class="grow">PC de vMix<input id="vHost" placeholder="127.0.0.1"></label><label>Puerto<input id="vPuerto" type="number"></label><label>Overlay<select id="vOv"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="0">No ponerlo</option></select></label></div>
+          <div class="row"><button id="vCargar" class="btn go">CARGAR EN vMix</button><button id="vSacar" class="btn">SACAR DEL OVERLAY</button></div>
+          <p class="muted">Crea un input Browser "PanelGo Llegadas" (transparente) y lo pone en el overlay elegido. En vMix: Settings › Web Controller activado.</p>
+        </div>
+        <div class="out">
+          <div class="head"><b>OBS</b><span id="obsRes" class="muted"></span></div>
+          <div class="opts"><label class="grow">PC de OBS<input id="oHost" placeholder="127.0.0.1"></label><label>Puerto<input id="oPuerto" type="number"></label><label>Contraseña<input id="oClave" type="password" autocomplete="off"></label></div>
+          <div class="opts"><label class="grow">Escena<select id="oEsc"><option value="">La que está al aire</option></select></label><button id="oEscenas" class="btn mini">BUSCAR ESCENAS</button></div>
+          <div class="row"><button id="oCargar" class="btn go">CARGAR EN OBS</button></div>
+          <p class="muted">Crea la fuente de navegador en la escena, arriba de todo. En OBS: Herramientas › Ajustes del servidor WebSocket › Habilitar.</p>
+        </div>
+        <div class="out">
+          <b>Direcciones (para cargarlas a mano)</b>
+          <div id="links" class="links"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<div id="toast" hidden></div>
+</body>
+</html>
