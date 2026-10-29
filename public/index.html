@@ -34,7 +34,7 @@
   <!-- Columna 2: vista y control al aire -->
   <div class="col">
     <section class="card">
-      <div class="head"><h2>Vista</h2><span class="muted">así sale en vMix / OBS</span></div>
+      <div class="head"><h2>Vista</h2><span class="muted">así sale en vMix / OBS</span><button id="recargar" class="btn mini" title="Vuelve a cargar los gráficos en vMix, OBS y esta vista (no hace falta tocar nada en OBS)">RECARGAR GRÁFICOS</button></div>
       <div class="prev"><iframe id="preview" src="graficos.html?fondo=cuadros" title="Vista de los gráficos" tabindex="-1"></iframe></div>
     </section>
     <section class="card grow">
@@ -72,8 +72,8 @@
       </div>
       <div class="tab scroll" id="tab-log" hidden>
         <div class="lgs">
-          <div class="lg"><b>Productora</b><span class="muted">arriba en las posiciones y como logo fijo</span><div class="slot" data-logo="productora"></div></div>
-          <div class="lg"><b>Cronometraje</b><span class="muted">en el cartel de llegada</span><div class="slot" data-logo="crono"></div></div>
+          <div class="lg"><b>Productora</b><span class="muted">logo fijo (botón LOGO de Al aire)</span><div class="slot" data-logo="productora"></div></div>
+          <div class="lg"><b>Cronometraje</b><span class="muted">en las posiciones y en el cartel de llegada</span><div class="slot" data-logo="crono"></div></div>
         </div>
         <div class="head"><b>Sponsors</b><label class="btn mini">+ AGREGAR<input id="spFile" type="file" accept="image/*" multiple hidden></label></div>
         <p class="muted">Rotan en el cartel de llegada (en lugar del cronometraje) y abajo de las posiciones.</p>

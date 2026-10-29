@@ -14,7 +14,7 @@ import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -92,7 +92,7 @@ function graficos() {
   }));
   const pd = config.podio.dist || D[0] || '';
   return {
-    ahora: Date.now(), seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, c: f.c })),
+    ahora: Date.now(), version: VERSION, recargar, seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, c: f.c })),
     tema: config.tema, textos: config.textos, llegada: config.llegada, aire: config.aire, logos: config.logos, reloj: config.reloj,
     posiciones: { ...P, grupos },
     podio: { titulo: ['PODIO', pd !== 'General' && pd, config.podio.cat, config.podio.sexo].filter(Boolean).join(' · '), tabla: motor.tabla({ dist: pd, cat: config.podio.cat, sexo: config.podio.sexo }).slice(0, 3).map(fila) },
@@ -181,7 +181,7 @@ async function quitarLogo({ tipo, archivo }) {
   else if (tipo in config.logos) { borrarArchivo(config.logos[tipo]); config.logos[tipo] = ''; }
   await save();
 }
-let ultimoLog = [];
+let ultimoLog = [], recargar = Date.now();
 const ROUTES = {
   'POST /api/link': d => setLink(d),
   'POST /api/columnas': d => setColumnas(d),
@@ -197,6 +197,7 @@ const ROUTES = {
     fuente.cargarTodos(1000, a => { cargando = a; }).catch(e => { if (fuente) fuente.estado.error = e.message; }).finally(() => { cargando = null; });
   },
   'POST /api/borrar': () => motor.borrar(),
+  'POST /api/recargar': () => { recargar = Date.now(); },
   'POST /api/vmix': async d => { ultimoLog = d.sacar ? (await vmix.sacar(config.vmix), ['Sacado del overlay']) : await vmix.cargar({ ...config.vmix, url: urlGraficos(config.vmix.host) }); },
   'POST /api/obs': async () => { ultimoLog = await obs.cargar({ ...config.obs, url: urlGraficos(config.obs.host) }); },
 };

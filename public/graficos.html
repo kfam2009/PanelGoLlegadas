@@ -176,7 +176,7 @@ function paginas() {
 function dibujarPos(anim) {
   const P = G.posiciones, el = $('#pos'), cen = P.lado === 'cen';
   el.className = 'capa ' + (P.lado || 'der') + (el.classList.contains('on') ? ' on' : '');
-  const pags = paginas(); posPag %= pags.length; const p = pags[posPag], lg = G.logos.productora ? esc(G.logos.productora) : '';
+  const pags = paginas(); posPag %= pags.length; const p = pags[posPag], lgs = G.logos.crono || G.logos.productora, lg = lgs ? esc(lgs) : '';
   const extra = c => cen ? `<span class="x">${esc(c.club || c.cat || '')}</span><span class="x">${esc(c.dist !== 'General' ? c.dist : '')}</span>` : '';
   el.innerHTML = `<div class="tb${anim ? ' anim' : ''}">${lg && P.logo === 'arriba' ? `<div class="lgb"><img src="${lg}" alt=""></div>` : ''}<div class="hd"><span class="ti">${esc(p.titulo)}</span>${p.pg ? `<span class="pg">${p.pg}</span>` : ''}${lg && P.logo === 'titulo' ? `<span class="lgc"><img src="${lg}" alt=""></span>` : ''}</div>` +
     (p.subtitulo ? `<div class="sub">${esc(p.subtitulo)}</div>` : '') +
@@ -222,15 +222,24 @@ function aplicar() {
   posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones));
   podio(Boolean(SOLO ? SOLO === 'podio' : A.podio));
   reloj(); $('#rel').classList.toggle('on', Boolean(solo('reloj')));
-  const bug = G.logos.productora; $('#bugI').src = bug || '';
-  $('#bug').className = 'capa ' + (G.tema.logoLado || 'der') + (bug && solo('logo') ? ' on' : '');
-  if (A.posiciones && !SOLO && (G.posiciones.lado || 'der') === (G.tema.logoLado || 'der')) $('#bug').classList.remove('on'); // no se pisan
+  // logo de la productora: si en su lado estan las posiciones, se pasa al otro; si ahi esta el reloj, va debajo
+  const bug = G.logos.productora; if ($('#bugI').getAttribute('src') !== (bug || '')) $('#bugI').src = bug || '';
+  let lado = G.tema.logoLado || 'der';
+  const posLado = A.posiciones && !SOLO ? (G.posiciones.lado || 'der') : '';
+  if (posLado === lado) lado = lado === 'der' ? 'izq' : 'der';
+  const bajo = (SOLO ? false : A.reloj) && (G.reloj.lado || 'izq') === lado;
+  $('#bug').style.top = bajo ? `calc(var(--m) + ${Math.round(110 * (G.tema.escala || 1))}px)` : '';
+  $('#bug').className = 'capa ' + lado + (bug && solo('logo') ? ' on' : '');
 }
 
 async function poll() {
   try {
     const t0 = Date.now();
     G = await fetch('/api/graficos', { cache: 'no-store', signal: AbortSignal.timeout(3000) }).then(r => r.json());
+    // programa actualizado o RECARGAR desde el panel: la pagina se vuelve a cargar sola (vMix / OBS)
+    const rk = G.version + ':' + G.recargar;
+    if (window.rk && window.rk !== rk) return location.reload();
+    window.rk = rk;
     offset = G.ahora - Math.round((t0 + Date.now()) / 2);
     aplicar();
     if (lastSeq === null || G.seq < lastSeq) lastSeq = G.seq;

@@ -117,6 +117,7 @@ for (const [id, k] of [['#pDist', 'dist'], ['#pCat', 'cat'], ['#pSexo', 'sexo'],
 for (const [id, k] of [['#dDist', 'dist'], ['#dCat', 'cat'], ['#dSexo', 'sexo']]) $(id).onchange = () => cfg({ podio: { [k]: $(id).value } });
 $('#largar').onclick = () => { if (!st.config.reloj.inicio || confirm('¿Largar de nuevo el reloj desde cero?')) act('config', { reloj: { accion: 'largar' } }, 'Reloj largado'); };
 $('#hora').onchange = () => $('#hora').value && act('config', { reloj: { accion: 'hora', hora: $('#hora').value.length === 5 ? $('#hora').value + ':00' : $('#hora').value } }, 'Largada a las ' + $('#hora').value);
+$('#recargar').onclick = () => act('recargar', {}, 'Recargando los gráficos en vMix y OBS');
 $('#cero').onclick = () => act('config', { reloj: { accion: 'cero' } });
 $('#rLado').onchange = () => cfg({ reloj: { lado: $('#rLado').value } });
 $('#rTitulo').onchange = () => cfg({ reloj: { titulo: $('#rTitulo').value } });
