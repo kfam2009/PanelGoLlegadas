@@ -14,7 +14,7 @@ import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 
-export const VERSION = '0.1.3';
+export const VERSION = '0.1.4';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
