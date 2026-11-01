@@ -50,7 +50,6 @@ function render() {
   }
   // Al aire
   for (const b of $$('.sw')) b.classList.toggle('on', Boolean(C.aire[b.dataset.aire]));
-  setVal('#llSeg', C.llegada.segundos); if (!focused('#llAgr')) $('#llAgr').checked = C.llegada.agrupar;
   const dists = st.distancias.map(d => d.dist);
   opciones('#pDist', dists, 'Todas (rotan)', C.posiciones.dist); opciones('#pCat', st.categorias, 'Todas', C.posiciones.cat); opciones('#pSexo', st.sexos, 'Todos', C.posiciones.sexo);
   opciones('#dDist', dists, dists.length ? 'La primera' : 'General', C.podio.dist); opciones('#dCat', st.categorias, 'General', C.podio.cat); opciones('#dSexo', st.sexos, 'Todos', C.podio.sexo);
@@ -111,8 +110,6 @@ $('#bib').onkeydown = e => { if (e.key === 'Enter') $('#sim').click(); };
 $('#scan').onclick = () => act('cargar', {}, 'Cargando todos los resultados...');
 $('#clear').onclick = () => { if (confirm('¿Borrar todos los corredores guardados? (para empezar un evento nuevo)')) act('borrar', {}, 'Borrado'); };
 for (const b of $$('.sw')) b.onclick = () => cfg({ aire: { [b.dataset.aire]: !st.config.aire[b.dataset.aire] } });
-$('#llSeg').onchange = () => cfg({ llegada: { segundos: Number($('#llSeg').value) } });
-$('#llAgr').onchange = () => cfg({ llegada: { agrupar: $('#llAgr').checked } });
 for (const [id, k] of [['#pDist', 'dist'], ['#pCat', 'cat'], ['#pSexo', 'sexo'], ['#pLado', 'lado'], ['#pFilas', 'filas'], ['#pLogo', 'logo'], ['#pTitulo', 'titulo']]) $(id).onchange = () => cfg({ posiciones: { [k]: $(id).value } });
 for (const [id, k] of [['#dDist', 'dist'], ['#dCat', 'cat'], ['#dSexo', 'sexo']]) $(id).onchange = () => cfg({ podio: { [k]: $(id).value } });
 $('#largar').onclick = () => { if (!st.config.reloj.inicio || confirm('¿Largar de nuevo el reloj desde cero?')) act('config', { reloj: { accion: 'largar' } }, 'Reloj largado'); };

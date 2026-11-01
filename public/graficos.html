@@ -116,7 +116,7 @@ const Q = new URLSearchParams(location.search);
 const SOLO = Q.get('capa');              // una sola capa (para cargarla como input aparte); siempre visible salvo la llegada
 if (Q.get('fondo')) document.body.classList.add(Q.get('fondo'));
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-let G = null, lastSeq = null, queue = [], offset = 0;
+let G = null, offset = 0;
 
 function fit() { $('#st').style.transform = `scale(${innerWidth / 1920},${innerHeight / 1080})`; }
 addEventListener('resize', fit); fit();
@@ -132,34 +132,26 @@ const sub = c => [c.dist && c.dist !== 'General' && `<b>${esc(c.dist)}</b>`, c.c
 const logoZ = () => { const l = G.logos; const s = l.sponsors?.length ? l.sponsors[Math.floor(Date.now() / 8000) % l.sponsors.length] : l.crono; return s ? `<img src="${esc(s)}" alt="">` : ''; };
 
 // ---------- Llegadas ----------
-async function mostrarLlegada(c) {
-  const el = $('#lleg');
-  el.innerHTML = `<div class="z"><div class="tag">${esc(G.textos.llegada)}${c.bib ? `<i>#${esc(c.bib)}</i>` : ''}</div><div class="bar">
+// Queda SIEMPRE la ultima: no desaparece sola. Solo cambia cuando llega uno nuevo.
+// No sale automatico: aparece cuando el operador la manda al aire (boton LLEGADAS).
+let llegMostrada = ''; // `${id}:${seq}` de la llegada que se esta mostrando
+function ultimaLlegada() {
+  if (G.feed && G.feed.length) { const f = G.feed[G.feed.length - 1]; return { c: f.c, k: f.c.id + ':' + f.seq }; }
+  if (G.ultima) return { c: G.ultima, k: G.ultima.id + ':0' };
+  return null;
+}
+function contenidoLlegada(c) {
+  return `<div class="z"><div class="tag">${esc(G.textos.llegada)}${c.bib ? `<i>#${esc(c.bib)}</i>` : ''}</div><div class="bar">
     <div class="p">${c.puesto ? c.puesto + '<small>°</small>' : '✓'}</div>
     <div class="mid"><div class="n">${esc(c.nombre)}</div><div class="s">${sub(c)}</div></div>
     <div class="t"><span>${esc(G.textos.tiempo)}</span><b>${esc(c.tiempo)}</b></div><div class="lg">${logoZ()}</div></div></div>`;
-  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
-  await wait((G.llegada.segundos || 8) * 1000);
-  el.classList.remove('on'); await wait(600);
 }
-async function mostrarGrupo(l) {
-  const el = $('#lleg');
-  el.innerHTML = `<div class="z g"><div class="tag">${esc(G.textos.llegadas)}<i>${l.length}</i></div><div class="bar">` +
-    l.map((c, i) => `<div class="row" style="animation-delay:${.35 + i * .12}s"><b class="gp">${c.puesto || '✓'}</b><span class="gn">${esc(c.nombre)}</span><span class="gd">${esc(c.dist !== 'General' ? c.dist : c.cat || '')}</span><span class="gt">${esc(c.tiempo)}</span></div>`).join('') + '</div></div>';
-  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
-  await wait(((G.llegada.segundos || 8) + 3) * 1000);
-  el.classList.remove('on'); await wait(600);
-}
-let corriendo = false;
-async function cola() {
-  if (corriendo) return; corriendo = true;
-  try {
-    while (queue.length) {
-      if (!G.aire.llegadas && SOLO !== 'llegada') { queue = []; break; }
-      if (queue.length >= 3 && G.llegada.agrupar !== false) await mostrarGrupo(queue.splice(0, 5).sort((a, b) => (a.puesto ?? 1e9) - (b.puesto ?? 1e9)));
-      else await mostrarLlegada(queue.shift());
-    }
-  } finally { corriendo = false; }
+function llegadas(on) {
+  const el = $('#lleg'), u = on ? ultimaLlegada() : null;
+  if (!u) { el.classList.remove('on'); if (!on) llegMostrada = ''; return; }
+  if (u.k !== llegMostrada) { // llego uno nuevo (o recien se mando al aire): se pinta y entra con animacion
+    el.innerHTML = contenidoLlegada(u.c); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); llegMostrada = u.k;
+  } else if (!el.classList.contains('on')) { el.innerHTML = contenidoLlegada(u.c); el.classList.add('on'); }
 }
 
 // ---------- Posiciones (paginas que rotan) ----------
@@ -219,6 +211,7 @@ setInterval(() => G && reloj(), 250);
 function aplicar() {
   tema(G.tema);
   const A = G.aire, solo = k => SOLO ? SOLO === k : A[k];
+  llegadas(Boolean(SOLO ? SOLO === 'llegada' : A.llegadas));
   posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones));
   podio(Boolean(SOLO ? SOLO === 'podio' : A.podio));
   reloj(); $('#rel').classList.toggle('on', Boolean(solo('reloj')));
@@ -242,9 +235,6 @@ async function poll() {
     window.rk = rk;
     offset = G.ahora - Math.round((t0 + Date.now()) / 2);
     aplicar();
-    if (lastSeq === null || G.seq < lastSeq) lastSeq = G.seq;
-    for (const f of G.feed) if (f.seq > lastSeq && (!SOLO || SOLO === 'llegada')) queue.push(f.c);
-    lastSeq = Math.max(lastSeq, G.seq); cola();
   } catch (e) {}
   setTimeout(poll, 400);
 }

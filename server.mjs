@@ -14,7 +14,7 @@ import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 
-export const VERSION = '0.1.4';
+export const VERSION = '0.1.5';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -37,7 +37,7 @@ const DEFAULTS = {
   tema: TEMA_BASE, temasGuardados: {},
   textos: { llegada: 'LLEGADA', llegadas: 'LLEGADAS', tiempo: 'TIEMPO', posiciones: 'POSICIONES', esperando: 'Esperando llegadas...' },
   llegada: { segundos: 8, agrupar: true },
-  aire: { llegadas: true, posiciones: false, podio: false, reloj: false, logo: false },
+  aire: { llegadas: false, posiciones: false, podio: false, reloj: false, logo: false },
   posiciones: { dist: '', cat: '', sexo: '', lado: 'der', filas: 10, segundos: 8, titulo: '', logo: 'arriba' },
   podio: { dist: '', cat: '', sexo: '' },
   reloj: { inicio: 0, pausa: 0, lado: 'izq', titulo: 'TIEMPO' },
@@ -93,6 +93,7 @@ function graficos() {
   const pd = config.podio.dist || D[0] || '';
   return {
     ahora: Date.now(), version: VERSION, recargar, seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, c: f.c })),
+    ultima: (() => { const id = motor.orden[motor.orden.length - 1]; const c = id && motor.corredores.get(id); return c ? motor.conPuesto(c) : null; })(),
     tema: config.tema, textos: config.textos, llegada: config.llegada, aire: config.aire, logos: config.logos, reloj: config.reloj,
     posiciones: { ...P, grupos },
     podio: { titulo: ['PODIO', pd !== 'General' && pd, config.podio.cat, config.podio.sexo].filter(Boolean).join(' · '), tabla: motor.tabla({ dist: pd, cat: config.podio.cat, sexo: config.podio.sexo }).slice(0, 3).map(fila) },
