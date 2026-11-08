@@ -102,6 +102,8 @@
   #bug{top:var(--m);transform-origin:100% 0}
   #bug.der{right:var(--m)}#bug.izq{left:var(--m);transform-origin:0 0}
   #bug img{height:110px;max-width:340px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+  #marca{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none;background-repeat:repeat}
+  #marca.on{display:block}
 </style>
 </head>
 <body>
@@ -112,6 +114,7 @@
   <div class="capa izq" id="rel"><div class="rl"><span id="relT">TIEMPO</span><b id="relV">0:00:00</b></div></div>
   <div class="capa der" id="bug"><img id="bugI" alt=""></div>
 </div>
+<div id="marca"></div>
 <script>
 const $ = s => document.querySelector(s), wait = ms => new Promise(r => setTimeout(r, ms));
 const Q = new URLSearchParams(location.search);
@@ -214,8 +217,18 @@ function reloj() {
 }
 setInterval(() => G && reloj(), 250);
 
+let marcaLista = false;
+function marcaAgua() {
+  if (!marcaLista) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='440' height='250'><text x='12' y='150' transform='rotate(-27 12 150)' font-family='Arial, sans-serif' font-size='34' font-weight='bold' fill='rgba(255,255,255,0.32)'>PanelGo · DEMO</text></svg>`;
+    $('#marca').style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    marcaLista = true;
+  }
+  $('#marca').classList.toggle('on', !(G.licencia && G.licencia.ok));
+}
 function aplicar() {
   tema(G.tema);
+  marcaAgua();
   const A = G.aire, solo = k => SOLO ? SOLO === k : A[k];
   llegadas(Boolean(SOLO ? SOLO === 'llegada' : A.llegadas));
   posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones));

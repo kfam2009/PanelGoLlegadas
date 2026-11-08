@@ -13,8 +13,9 @@ import { crearFuente } from './lib/fuentes.mjs';
 import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
+import { verificar, estadoLicencia } from './lib/licencia.mjs';
 
-export const VERSION = '0.1.7';
+export const VERSION = '0.1.8';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -33,7 +34,7 @@ export const TEMAS = {
 };
 export const FUENTES = ['Segoe UI', 'Bahnschrift', 'Arial Black', 'Arial', 'Impact', 'Trebuchet MS', 'Verdana', 'Tahoma', 'Franklin Gothic Medium', 'Calibri', 'Century Gothic', 'Georgia'];
 const DEFAULTS = {
-  link: '', intervalo: 5, columnas: null,
+  link: '', intervalo: 5, columnas: null, licencia: '',
   tema: TEMA_BASE, temasGuardados: {},
   textos: { llegada: 'LLEGADA', paso: 'PASÓ', llegadas: 'LLEGADAS', tiempo: 'TIEMPO', posiciones: 'POSICIONES', esperando: 'Esperando llegadas...' },
   llegada: { segundos: 8, agrupar: true },
@@ -78,6 +79,7 @@ function estado() {
     config: { ...config, obs: { ...config.obs, clave: config.obs.clave ? '••••' : '' } },
     temas: TEMAS, fuentes: FUENTES, campos: CAMPOS,
     datos: { ...(fuente?.estado || { conectado: false, error: '' }), ...(fuente?.info?.() || {}), cargando },
+    licencia: verificar(config.licencia),
     ...motor.resumen(), categorias: motor.categorias(config.posiciones.dist), sexos: [...new Set([...motor.corredores.values()].map(c => c.sexo).filter(Boolean))].sort(),
     graficos: { local: urlGraficos(''), vmix: urlGraficos(config.vmix.host), obs: urlGraficos(config.obs.host) },
   };
@@ -92,8 +94,9 @@ function graficos() {
   }));
   const pd = config.podio.dist || D[0] || '';
   return {
-    ahora: Date.now(), version: VERSION, recargar, seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, c: f.c })),
+    ahora: Date.now(), version: VERSION, recargar, seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, tipo: f.tipo, c: f.c })),
     ultima: (() => { const id = motor.orden[motor.orden.length - 1]; const c = id && motor.corredores.get(id); return c ? motor.conPuesto(c) : null; })(),
+    licencia: estadoLicencia(config.licencia),
     tema: config.tema, textos: config.textos, llegada: config.llegada, aire: config.aire, logos: config.logos, reloj: config.reloj,
     posiciones: { ...P, grupos },
     podio: { titulo: ['PODIO', pd !== 'General' && pd, config.podio.cat, config.podio.sexo].filter(Boolean).join(' · '), tabla: motor.tabla({ dist: pd, cat: config.podio.cat, sexo: config.podio.sexo }).slice(0, 3).map(fila) },
@@ -110,6 +113,11 @@ async function setLink(d) {
   if (link) { const f = crearFuente(link, motor, { intervalo: config.intervalo }); await f.probar().catch(e => { throw Error('No se pudo leer el link: ' + e.message); }); }
   if (link !== config.link) config.columnas = null;
   config.link = link; await save(); conectar();
+}
+async function setLicencia(d) {
+  const token = str(d.token, 2000);
+  if (token) { const v = verificar(token); if (!v.cliente && v.motivo && /firma|formato|ileg/i.test(v.motivo)) throw Error('Esa llave no es válida: ' + v.motivo); }
+  config.licencia = token; await save();
 }
 async function setColumnas(d) {
   if (d.columnas === null) config.columnas = null;
@@ -188,6 +196,7 @@ const ROUTES = {
   'POST /api/columnas': d => setColumnas(d),
   'POST /api/reconectar': () => conectar(),
   'POST /api/config': d => setConfig(d),
+  'POST /api/licencia': d => setLicencia(d),
   'POST /api/logos/subir': d => subirLogo(d),
   'POST /api/logos/quitar': d => quitarLogo(d),
   'POST /api/simular': async d => { if (!fuente?.simular) throw Error('Primero cargá el link de los resultados'); await fuente.simular(str(d.bib, 20)); },

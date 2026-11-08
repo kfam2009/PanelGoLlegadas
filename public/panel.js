@@ -64,6 +64,14 @@ function render() {
   setVal('#fuente', C.tema.fuente); setVal('#escala', C.tema.escala); setVal('#margen', C.tema.margen); setVal('#redondeo', C.tema.redondeo);
   if (!focused('#mayus')) $('#mayus').checked = C.tema.mayusculas;
   for (const i of $$('[data-x]')) setVal(`[data-x="${i.dataset.x}"]`, C.textos[i.dataset.x]);
+  // Licencia
+  const L = st.licencia || {};
+  if ($('#licPill')) {
+    $('#licPill').textContent = L.ok ? 'ACTIVA' : 'DEMO';
+    $('#licPill').className = 'pill ' + (L.ok ? 'ok' : 'warn');
+    $('#licInfo').textContent = L.ok ? `Cliente: ${L.cliente || '—'}${L.hasta ? ' · válida hasta ' + L.hasta : ''}` : (L.motivo || 'Sin licencia · marca de agua');
+    setVal('#licToken', C.licencia || '');
+  }
   setVal('#pTitulo', C.posiciones.titulo); setVal('#rTitulo', C.reloj.titulo);
   // Logos
   if (changed('logos', C.logos)) {
@@ -127,6 +135,8 @@ for (const k of ['escala', 'margen', 'redondeo']) $('#' + k).oninput = () => tem
 $('#temaBase').onchange = () => { if ($('#temaBase').value) cfg({ temaBase: $('#temaBase').value }); };
 $('#guardarTema').onclick = () => { const n = prompt('Nombre para este estilo (ej. el de la productora):'); if (n) act('config', { guardarTema: n }, 'Estilo guardado: ' + n); };
 for (const i of $$('[data-x]')) i.onchange = () => cfg({ textos: { [i.dataset.x]: i.value } });
+$('#licAplicar').onclick = () => act('licencia', { token: $('#licToken').value.trim() }, 'Licencia actualizada');
+$('#licQuitar').onclick = () => { $('#licToken').value = ''; act('licencia', { token: '' }, 'Licencia quitada'); };
 for (const t of $$('.tabs button')) t.onclick = () => { for (const b of $$('.tabs button')) b.classList.toggle('on', b === t); for (const p of $$('.tab')) p.hidden = p.id !== 'tab-' + t.dataset.tab; };
 // logos
 const leerImagen = f => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(f); });

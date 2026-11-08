@@ -55,7 +55,7 @@
   <!-- Columna 3: diseño, logos y salidas -->
   <div class="col">
     <section class="card grow">
-      <nav class="tabs"><button data-tab="dis" class="on">DISEÑO</button><button data-tab="log">LOGOS</button><button data-tab="sal">vMix / OBS</button></nav>
+      <nav class="tabs"><button data-tab="dis" class="on">DISEÑO</button><button data-tab="log">LOGOS</button><button data-tab="sal">vMix / OBS</button><button data-tab="lic">LICENCIA</button></nav>
       <div class="tab scroll" id="tab-dis">
         <div class="opts"><label class="grow">Estilo<select id="temaBase"></select></label><button id="guardarTema" class="btn mini" title="Guarda los colores actuales con un nombre">GUARDAR ESTILO</button></div>
         <div class="colores">
@@ -95,6 +95,16 @@
         <div class="out">
           <b>Direcciones (para cargarlas a mano)</b>
           <div id="links" class="links"></div>
+        </div>
+      </div>
+      <div class="tab scroll" id="tab-lic" hidden>
+        <div class="out">
+          <div class="head"><b>Estado de la licencia</b><span id="licPill" class="pill">—</span></div>
+          <p id="licInfo" class="muted"></p>
+          <label class="grow">Pegá la llave del evento
+            <textarea id="licToken" rows="3" placeholder="Pegá acá la llave que te pasó Panel Go" style="width:100%;resize:vertical"></textarea></label>
+          <div class="row"><button id="licAplicar" class="btn go">ACTIVAR</button><button id="licQuitar" class="btn">QUITAR</button></div>
+          <p class="muted">Sin licencia válida el panel funciona igual, pero los gráficos salen con una marca de agua. La llave vale para las fechas del evento.</p>
         </div>
       </div>
     </section>
