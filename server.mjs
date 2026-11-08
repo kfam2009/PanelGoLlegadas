@@ -15,7 +15,7 @@ import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 import { verificar, estadoLicencia } from './lib/licencia.mjs';
 
-export const VERSION = '0.1.8';
+export const VERSION = '0.1.9';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -34,7 +34,7 @@ export const TEMAS = {
 };
 export const FUENTES = ['Segoe UI', 'Bahnschrift', 'Arial Black', 'Arial', 'Impact', 'Trebuchet MS', 'Verdana', 'Tahoma', 'Franklin Gothic Medium', 'Calibri', 'Century Gothic', 'Georgia'];
 const DEFAULTS = {
-  link: '', intervalo: 5, columnas: null, licencia: '',
+  link: '', intervalo: 5, columnas: null, licencia: '', layout: {},
   tema: TEMA_BASE, temasGuardados: {},
   textos: { llegada: 'LLEGADA', paso: 'PASÓ', llegadas: 'LLEGADAS', tiempo: 'TIEMPO', posiciones: 'POSICIONES', esperando: 'Esperando llegadas...' },
   llegada: { segundos: 8, agrupar: true },
@@ -97,6 +97,7 @@ function graficos() {
     ahora: Date.now(), version: VERSION, recargar, seq: motor.seq, feed: motor.feedPantalla().map(f => ({ seq: f.seq, tipo: f.tipo, c: f.c })),
     ultima: (() => { const id = motor.orden[motor.orden.length - 1]; const c = id && motor.corredores.get(id); return c ? motor.conPuesto(c) : null; })(),
     licencia: estadoLicencia(config.licencia),
+    layout: config.layout || {},
     tema: config.tema, textos: config.textos, llegada: config.llegada, aire: config.aire, logos: config.logos, reloj: config.reloj,
     posiciones: { ...P, grupos },
     podio: { titulo: ['PODIO', pd !== 'General' && pd, config.podio.cat, config.podio.sexo].filter(Boolean).join(' · '), tabla: motor.tabla({ dist: pd, cat: config.podio.cat, sexo: config.podio.sexo }).slice(0, 3).map(fila) },
@@ -123,6 +124,17 @@ async function setColumnas(d) {
   if (d.columnas === null) config.columnas = null;
   else { const m = {}; for (const [k, v] of Object.entries(d.columnas || {})) if (k in CAMPOS) m[k] = v === '' || v == null ? -1 : Number(v); config.columnas = m; }
   await save(); conectar();
+}
+const LAYOUT_IDS = ['lleg', 'pos', 'pod', 'rel', 'bug'];
+async function setLayout(d) {
+  const id = String(d.id || '');
+  if (!LAYOUT_IDS.includes(id)) throw Error('Gráfico desconocido');
+  if (d.reset === 'all') config.layout = {};
+  else if (d.reset) delete config.layout[id];
+  else config.layout[id] = {
+    x: numero(d.x, -2000, 3840, 0), y: numero(d.y, -2000, 2160, 0), s: numero(d.s, 0.2, 4, 1),
+  };
+  await save();
 }
 async function setConfig(d) {
   if (d.tema) {
@@ -197,6 +209,7 @@ const ROUTES = {
   'POST /api/reconectar': () => conectar(),
   'POST /api/config': d => setConfig(d),
   'POST /api/licencia': d => setLicencia(d),
+  'POST /api/layout': d => setLayout(d),
   'POST /api/logos/subir': d => subirLogo(d),
   'POST /api/logos/quitar': d => quitarLogo(d),
   'POST /api/simular': async d => { if (!fuente?.simular) throw Error('Primero cargá el link de los resultados'); await fuente.simular(str(d.bib, 20)); },
