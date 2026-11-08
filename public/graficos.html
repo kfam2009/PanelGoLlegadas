@@ -22,6 +22,8 @@
   .z .bar{display:flex;align-items:stretch;height:132px;clip-path:inset(0 100% 0 0);border-radius:0 var(--r) var(--r) var(--r);overflow:hidden}
   .z .p{min-width:132px;padding:0 18px;display:flex;align-items:center;justify-content:center;background:var(--c1);color:var(--ctx);font-weight:900;font-size:84px;letter-spacing:-3px}
   .z .p small{font-size:.45em;letter-spacing:0;margin-left:2px;align-self:flex-start;margin-top:30px}
+  /* Parcial (tri/duo): el cuadro va neutro, no con el color de ganador, y la flecha mas chica */
+  .z.paso .p{background:var(--c3);color:var(--tx);font-size:56px}
   .z .mid{background:var(--c2);display:flex;flex-direction:column;justify-content:center;padding:0 34px;min-width:620px;max-width:980px}
   .z .n{font-weight:900;font-size:60px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .z .s{font-weight:700;font-size:28px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
@@ -136,22 +138,26 @@ const logoZ = () => { const l = G.logos; const s = l.sponsors?.length ? l.sponso
 // No sale automatico: aparece cuando el operador la manda al aire (boton LLEGADAS).
 let llegMostrada = ''; // `${id}:${seq}` de la llegada que se esta mostrando
 function ultimaLlegada() {
-  if (G.feed && G.feed.length) { const f = G.feed[G.feed.length - 1]; return { c: f.c, k: f.c.id + ':' + f.seq }; }
-  if (G.ultima) return { c: G.ultima, k: G.ultima.id + ':0' };
+  if (G.feed && G.feed.length) { const f = G.feed[G.feed.length - 1]; return { c: f.c, tipo: f.tipo || 'llegada', k: f.c.id + ':' + f.seq }; }
+  if (G.ultima) return { c: G.ultima, tipo: 'llegada', k: G.ultima.id + ':0' };
   return null;
 }
-function contenidoLlegada(c) {
-  return `<div class="z"><div class="tag">${esc(G.textos.llegada)}${c.bib ? `<i>#${esc(c.bib)}</i>` : ''}</div><div class="bar">
-    <div class="p">${c.puesto ? c.puesto + '<small>°</small>' : '✓'}</div>
+function contenidoLlegada(c, tipo) {
+  const paso = tipo === 'paso';
+  const titulo = paso ? (G.textos.paso || 'PASÓ') : G.textos.llegada;
+  const marca = paso ? '→' : (c.puesto ? c.puesto + '<small>°</small>' : '✓');
+  return `<div class="z${paso ? ' paso' : ''}"><div class="tag">${esc(titulo)}${c.bib ? `<i>#${esc(c.bib)}</i>` : ''}</div><div class="bar">
+    <div class="p">${marca}</div>
     <div class="mid"><div class="n">${esc(c.nombre)}</div><div class="s">${sub(c)}</div></div>
     <div class="t"><span>${esc(G.textos.tiempo)}</span><b>${esc(c.tiempo)}</b></div><div class="lg">${logoZ()}</div></div></div>`;
 }
 function llegadas(on) {
   const el = $('#lleg'), u = on ? ultimaLlegada() : null;
   if (!u) { el.classList.remove('on'); if (!on) llegMostrada = ''; return; }
-  if (u.k !== llegMostrada) { // llego uno nuevo (o recien se mando al aire): se pinta y entra con animacion
-    el.innerHTML = contenidoLlegada(u.c); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); llegMostrada = u.k;
-  } else if (!el.classList.contains('on')) { el.innerHTML = contenidoLlegada(u.c); el.classList.add('on'); }
+  const k = u.k + ':' + u.tipo;
+  if (k !== llegMostrada) { // llego uno nuevo (o recien se mando al aire): se pinta y entra con animacion
+    el.innerHTML = contenidoLlegada(u.c, u.tipo); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); llegMostrada = k;
+  } else if (!el.classList.contains('on')) { el.innerHTML = contenidoLlegada(u.c, u.tipo); el.classList.add('on'); }
 }
 
 // ---------- Posiciones (paginas que rotan) ----------
