@@ -15,7 +15,7 @@ import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 import { verificar, estadoLicencia } from './lib/licencia.mjs';
 
-export const VERSION = '0.1.11';
+export const VERSION = '0.1.12';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -127,10 +127,10 @@ async function setColumnas(d) {
 }
 const LAYOUT_IDS = ['lleg', 'pos', 'pod', 'rel', 'bug'];
 async function setLayout(d) {
+  if (d.reset === 'all') { config.layout = {}; await save(); return; }
   const id = String(d.id || '');
   if (!LAYOUT_IDS.includes(id)) throw Error('Gráfico desconocido');
-  if (d.reset === 'all') config.layout = {};
-  else if (d.reset) delete config.layout[id];
+  if (d.reset) delete config.layout[id];
   else config.layout[id] = {
     x: numero(d.x, -2000, 3840, 0), y: numero(d.y, -2000, 2160, 0), s: numero(d.s, 0.2, 4, 1),
   };
