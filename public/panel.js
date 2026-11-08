@@ -123,15 +123,13 @@ for (const [id, k] of [['#dDist', 'dist'], ['#dCat', 'cat'], ['#dSexo', 'sexo']]
 $('#largar').onclick = () => { if (!st.config.reloj.inicio || confirm('¿Largar de nuevo el reloj desde cero?')) act('config', { reloj: { accion: 'largar' } }, 'Reloj largado'); };
 $('#hora').onchange = () => $('#hora').value && act('config', { reloj: { accion: 'hora', hora: $('#hora').value.length === 5 ? $('#hora').value + ':00' : $('#hora').value } }, 'Largada a las ' + $('#hora').value);
 $('#recargar').onclick = () => act('recargar', {}, 'Recargando los gráficos en vMix y OBS');
-let moviendo = false;
+$('#resetMover').hidden = false; // siempre visible
 $('#mover').onclick = () => {
-  moviendo = !moviendo;
-  $('#preview').src = 'graficos.html?fondo=cuadros' + (moviendo ? '&editar=1' : '');
-  $('#mover').classList.toggle('on', moviendo);
-  $('#mover').textContent = moviendo ? 'LISTO' : 'MOVER GRÁFICOS';
-  $('#resetMover').hidden = !moviendo;
+  // se abre en una ventana grande (la vista del panel es muy chica para arrastrar)
+  const w = Math.min(screen.availWidth - 80, 1500), h = Math.min(screen.availHeight - 80, 900);
+  window.open('graficos.html?fondo=cuadros&editar=1', 'panelgo_mover', `width=${w},height=${h}`);
 };
-$('#resetMover').onclick = async () => { await act('layout', { reset: 'all' }, 'Gráficos a su lugar'); $('#preview').src = $('#preview').src; };
+$('#resetMover').onclick = () => act('layout', { reset: 'all' }, 'Gráficos a su lugar');
 $('#cero').onclick = () => act('config', { reloj: { accion: 'cero' } });
 $('#rLado').onchange = () => cfg({ reloj: { lado: $('#rLado').value } });
 $('#rTitulo').onchange = () => cfg({ reloj: { titulo: $('#rTitulo').value } });
