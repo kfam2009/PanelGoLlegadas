@@ -298,24 +298,40 @@ function marcaAgua() {
     $('#marca').style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
     marcaLista = true;
   }
-  $('#marca').classList.toggle('on', !(G.licencia && G.licencia.ok));
+  $('#marca').classList.toggle('on', !EDITAR && !(G.licencia && G.licencia.ok));
+}
+// En modo edicion, si todavia no hay datos, se muestran ejemplos para tener referencia de tamaño.
+const LOGO_EJEMPLO = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='320' height='110'><rect width='320' height='110' rx='10' fill='#2b3140' stroke='#ffd400' stroke-dasharray='6 5'/><text x='160' y='64' font-family='Arial' font-size='34' font-weight='bold' fill='#ffd400' text-anchor='middle'>LOGO</text></svg>`);
+function ejemplosEdit() {
+  if (!EDITAR || !G) return;
+  const ej = [
+    { id: 'ej1', puesto: 1, nombre: 'Nombre Apellido', tiempo: '34:12', dist: '10K', cat: '', club: '' },
+    { id: 'ej2', puesto: 2, nombre: 'Otro Corredor', tiempo: '35:40', dist: '10K', cat: '', club: '' },
+    { id: 'ej3', puesto: 3, nombre: 'Tercer Lugar', tiempo: '36:05', dist: '10K', cat: '', club: '' },
+    { id: 'ej4', puesto: 4, nombre: 'Cuarto Corredor', tiempo: '37:20', dist: '10K', cat: '', club: '' },
+    { id: 'ej5', puesto: 5, nombre: 'Quinto Corredor', tiempo: '38:00', dist: '10K', cat: '', club: '' },
+  ];
+  if (!(G.feed && G.feed.length) && !G.ultima) G.ultima = { ...ej[0], bib: '12' };
+  if (!G.posiciones.grupos || !G.posiciones.grupos.some(g => g.tabla && g.tabla.length)) G.posiciones = { ...G.posiciones, grupos: [{ titulo: (G.textos.posiciones || 'POSICIONES') + ' 10K', subtitulo: '', tabla: ej }] };
+  if (!(G.podio.tabla && G.podio.tabla.length)) G.podio = { ...G.podio, titulo: G.podio.titulo || 'PODIO · 10K', tabla: ej.slice(0, 3) };
 }
 function aplicar() {
   tema(G.tema);
   marcaAgua();
+  ejemplosEdit();
   const A = G.aire, solo = k => SOLO ? SOLO === k : A[k];
-  llegadas(Boolean(SOLO ? SOLO === 'llegada' : A.llegadas));
-  posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones));
-  podio(Boolean(SOLO ? SOLO === 'podio' : A.podio));
-  reloj(); $('#rel').classList.toggle('on', Boolean(solo('reloj')));
+  llegadas(Boolean(SOLO ? SOLO === 'llegada' : A.llegadas) || EDITAR);
+  posiciones(Boolean(SOLO ? SOLO === 'posiciones' : A.posiciones) || EDITAR);
+  podio(Boolean(SOLO ? SOLO === 'podio' : A.podio) || EDITAR);
+  reloj(); $('#rel').classList.toggle('on', Boolean(solo('reloj')) || EDITAR);
   // logo de la productora: si en su lado estan las posiciones, se pasa al otro; si ahi esta el reloj, va debajo
-  const bug = G.logos.productora; if ($('#bugI').getAttribute('src') !== (bug || '')) $('#bugI').src = bug || '';
+  const bug = G.logos.productora, srcLogo = bug || (EDITAR ? LOGO_EJEMPLO : ''); if ($('#bugI').getAttribute('src') !== srcLogo) $('#bugI').src = srcLogo;
   let lado = G.tema.logoLado || 'der';
   const posLado = A.posiciones && !SOLO ? (G.posiciones.lado || 'der') : '';
   if (posLado === lado) lado = lado === 'der' ? 'izq' : 'der';
   const bajo = (SOLO ? false : A.reloj) && (G.reloj.lado || 'izq') === lado;
   $('#bug').style.top = bajo ? `calc(var(--m) + ${Math.round(110 * (G.tema.escala || 1))}px)` : '';
-  $('#bug').className = 'capa ' + lado + (bug && solo('logo') ? ' on' : '');
+  $('#bug').className = 'capa ' + lado + ((EDITAR || (bug && solo('logo'))) ? ' on' : '');
   aplicarLayout();
 }
 

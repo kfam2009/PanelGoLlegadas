@@ -15,7 +15,7 @@ import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 import { verificar, estadoLicencia } from './lib/licencia.mjs';
 
-export const VERSION = '0.1.12';
+export const VERSION = '0.1.13';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -219,7 +219,7 @@ const ROUTES = {
     if (cargando) return; cargando = { hechos: 0, total: 0, encontrados: 0 };
     fuente.cargarTodos(1000, a => { cargando = a; }).catch(e => { if (fuente) fuente.estado.error = e.message; }).finally(() => { cargando = null; });
   },
-  'POST /api/borrar': () => motor.borrar(),
+  'POST /api/borrar': async () => { fuente?.desconectar(); fuente = null; config.link = ''; config.columnas = null; await save(); motor.borrar(); },
   'POST /api/recargar': () => { recargar = Date.now(); },
   'POST /api/vmix': async d => { ultimoLog = d.sacar ? (await vmix.sacar(config.vmix), ['Sacado del overlay']) : await vmix.cargar({ ...config.vmix, url: urlGraficos(config.vmix.host) }); },
   'POST /api/obs': async () => { ultimoLog = await obs.cargar({ ...config.obs, url: urlGraficos(config.obs.host) }); },
