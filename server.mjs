@@ -15,7 +15,7 @@ import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 import { verificar, estadoLicencia } from './lib/licencia.mjs';
 
-export const VERSION = '0.1.9';
+export const VERSION = '0.1.10';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');

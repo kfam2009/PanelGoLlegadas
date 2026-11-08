@@ -13,10 +13,14 @@
   .may{text-transform:uppercase}
   .capa{position:absolute;opacity:0;visibility:hidden;transition:opacity .45s,visibility 0s .45s}
   .capa.on{opacity:1;visibility:visible;transition:opacity .45s}
-  /* Modo edicion: se ven y se arrastran todas */
-  body.editar .capa{opacity:1 !important;visibility:visible !important;outline:2px dashed rgba(255,212,0,.9);outline-offset:4px;cursor:move}
-  body.editar .capa::after{content:attr(data-nom);position:absolute;left:0;top:-26px;background:#ffd400;color:#000;font:700 13px/1 var(--font);padding:4px 8px;border-radius:5px;white-space:nowrap}
-  #ayuda{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(15,19,27,.92);color:#fff;font:600 15px/1.3 var(--font);padding:10px 18px;border-radius:8px;border:1px solid #2b3140;display:none;z-index:10000}
+  /* Modo edicion: se ven todas, y cada una se agarra de su manija (no se pisan) */
+  body.editar .capa{opacity:1 !important;visibility:visible !important;outline:2px dashed rgba(255,212,0,.5);outline-offset:3px}
+  #dx{position:absolute;inset:0;pointer-events:none;display:none}
+  body.editar #dx{display:block}
+  .dx-h{position:absolute;pointer-events:auto;cursor:grab;background:#ffd400;color:#000;font:800 15px/1 var(--font);padding:8px 12px;border-radius:6px;white-space:nowrap;user-select:none;box-shadow:0 3px 10px rgba(0,0,0,.55);touch-action:none}
+  .dx-h:hover{background:#fff}
+  .dx-h:active{cursor:grabbing}
+  #ayuda{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(15,19,27,.94);color:#fff;font:600 15px/1.3 var(--font);padding:10px 18px;border-radius:8px;border:1px solid #2b3140;display:none;z-index:10000}
   body.editar #ayuda{display:block}
 
   /* ---------- Llegada (zocalo) ---------- */
@@ -151,6 +155,7 @@ function aplicarLayout() {
       el.style.left = el.style.top = el.style.right = el.style.bottom = el.style.transform = el.style.transformOrigin = ''; delete el.dataset.ov;
     }
   }
+  posicionarManijas();
 }
 function guardarLayout(id, x, y, s) {
   fetch('/api/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, x: Math.round(x), y: Math.round(y), s: Math.round(s * 1000) / 1000 }) }).catch(() => {});
@@ -161,26 +166,39 @@ function estadoActual(id) {
   const el = document.getElementById(id), st = $('#st').getBoundingClientRect(), r = el.getBoundingClientRect(), sc = st.width / 1920 || 1;
   return { x: (r.left - st.left) / sc, y: (r.top - st.top) / sc, s: escalaBase(id) };
 }
-if (EDITAR) IDS.forEach(id => {
+// Modo edicion: una manija (etiqueta) por grafico; se agarra de ahi para que no se pisen.
+const manijas = {};
+function ponerEl(id, x, y, s) {
   const el = document.getElementById(id);
-  el.addEventListener('pointerdown', ev => {
-    ev.preventDefault(); ev.stopPropagation();
-    const st = $('#st').getBoundingClientRect(), sc = st.width / 1920 || 1, ini = estadoActual(id), sx = ev.clientX, sy = ev.clientY;
-    arrastrando = id; el.setPointerCapture(ev.pointerId); el.style.transition = 'none';
-    el.style.transformOrigin = '0 0'; el.style.right = 'auto'; el.style.bottom = 'auto';
-    el.style.left = ini.x + 'px'; el.style.top = ini.y + 'px'; el.style.transform = 'scale(' + ini.s + ')';
-    let nx = ini.x, ny = ini.y;
-    const mover = e => { nx = ini.x + (e.clientX - sx) / sc; ny = ini.y + (e.clientY - sy) / sc; el.style.left = nx + 'px'; el.style.top = ny + 'px'; };
-    const soltar = () => { el.removeEventListener('pointermove', mover); el.removeEventListener('pointerup', soltar); guardarLayout(id, nx, ny, ini.s); arrastrando = null; };
-    el.addEventListener('pointermove', mover); el.addEventListener('pointerup', soltar);
-  });
-  el.addEventListener('wheel', ev => {
-    ev.preventDefault(); const a = estadoActual(id), s = Math.max(0.3, Math.min(3, a.s * (ev.deltaY < 0 ? 1.06 : 0.94)));
-    arrastrando = id; el.style.transformOrigin = '0 0'; el.style.right = 'auto'; el.style.bottom = 'auto';
-    el.style.left = a.x + 'px'; el.style.top = a.y + 'px'; el.style.transform = 'scale(' + s + ')';
-    clearTimeout(el._wt); el._wt = setTimeout(() => { guardarLayout(id, a.x, a.y, s); arrastrando = null; }, 300);
-  }, { passive: false });
-});
+  el.style.transition = 'none'; el.style.transformOrigin = '0 0'; el.style.right = 'auto'; el.style.bottom = 'auto';
+  el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.transform = 'scale(' + s + ')'; el.dataset.ov = '1';
+  const h = manijas[id]; if (h) { h.style.left = x + 'px'; h.style.top = (y - 36) + 'px'; }
+}
+function posicionarManijas() {
+  if (!EDITAR) return;
+  for (const id of IDS) { if (arrastrando === id) continue; const a = estadoActual(id), h = manijas[id]; if (h) { h.style.left = a.x + 'px'; h.style.top = (a.y - 36) + 'px'; } }
+}
+if (EDITAR) {
+  const cont = document.createElement('div'); cont.id = 'dx'; $('#st').appendChild(cont);
+  for (const id of IDS) {
+    const h = document.createElement('div'); h.className = 'dx-h'; h.textContent = '✥ ' + (document.getElementById(id)?.dataset.nom || id);
+    cont.appendChild(h); manijas[id] = h;
+    h.addEventListener('pointerdown', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const st = $('#st').getBoundingClientRect(), sc = st.width / 1920 || 1, ini = estadoActual(id), sx = ev.clientX, sy = ev.clientY;
+      arrastrando = id; h.setPointerCapture(ev.pointerId);
+      let nx = ini.x, ny = ini.y;
+      const mover = e => { nx = ini.x + (e.clientX - sx) / sc; ny = ini.y + (e.clientY - sy) / sc; ponerEl(id, nx, ny, ini.s); };
+      const soltar = () => { h.removeEventListener('pointermove', mover); h.removeEventListener('pointerup', soltar); guardarLayout(id, nx, ny, ini.s); arrastrando = null; };
+      h.addEventListener('pointermove', mover); h.addEventListener('pointerup', soltar);
+    });
+    h.addEventListener('wheel', ev => {
+      ev.preventDefault(); const a = estadoActual(id), s = Math.max(0.3, Math.min(3, a.s * (ev.deltaY < 0 ? 1.06 : 0.94)));
+      arrastrando = id; ponerEl(id, a.x, a.y, s);
+      clearTimeout(manijas[id]._wt); manijas[id]._wt = setTimeout(() => { guardarLayout(id, a.x, a.y, s); arrastrando = null; }, 300);
+    }, { passive: false });
+  }
+}
 
 function tema(t) {
   const r = document.documentElement.style;
