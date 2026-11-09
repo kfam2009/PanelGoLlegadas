@@ -14,9 +14,8 @@ import { CAMPOS } from './lib/detectar.mjs';
 import { VMix, OBS } from './lib/salidas.mjs';
 import { leer } from './lib/recursos.mjs';
 import { verificar, estadoLicencia } from './lib/licencia.mjs';
-import { crearDomo, MARCAS } from './lib/domos.mjs';
 
-export const VERSION = '0.1.14';
+export const VERSION = '0.1.15';
 const root = process.env.PC_ROOT || path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 5200);
 const dataDir = process.env.DATA_DIR || path.join(root, 'data');
@@ -46,7 +45,6 @@ const DEFAULTS = {
   logos: { productora: '', crono: '', sponsors: [] },
   vmix: { host: '127.0.0.1', puerto: 8088, overlay: 1, nombre: 'PanelGo Llegadas' },
   obs: { host: '127.0.0.1', puerto: 4455, clave: '', escena: '', nombre: 'PanelGo Llegadas' },
-  domos: { lista: [], sel: 0, paso: 400 },
 };
 let config = structuredClone(DEFAULTS);
 try { const c = JSON.parse(fss.readFileSync(configFile, 'utf8')); for (const k of Object.keys(c)) config[k] = c[k] && typeof c[k] === 'object' && !Array.isArray(c[k]) && DEFAULTS[k] ? { ...DEFAULTS[k], ...c[k] } : c[k]; } catch {}
@@ -78,8 +76,7 @@ function urlGraficos(host, capa = '') {
 function estado() {
   return {
     version: VERSION, urls: lanIps().map(i => `http://${i}:${PORT}/`), puerto: PORT,
-    config: { ...config, obs: { ...config.obs, clave: config.obs.clave ? '••••' : '' },
-      domos: { ...config.domos, marcas: MARCAS, lista: (config.domos.lista || []).map(c => ({ ...c, clave: c.clave ? '••••' : '' })) } },
+    config: { ...config, obs: { ...config.obs, clave: config.obs.clave ? '••••' : '' } },
     temas: TEMAS, fuentes: FUENTES, campos: CAMPOS,
     datos: { ...(fuente?.estado || { conectado: false, error: '' }), ...(fuente?.info?.() || {}), cargando },
     licencia: verificar(config.licencia),
@@ -137,21 +134,6 @@ async function setLayout(d) {
   else config.layout[id] = {
     x: numero(d.x, -2000, 3840, 0), y: numero(d.y, -2000, 2160, 0), s: numero(d.s, 0.2, 4, 1),
   };
-  await save();
-}
-const camActual = () => config.domos.lista[config.domos.sel];
-async function setDomos(d) {
-  const prev = new Map((config.domos.lista || []).map(c => [c.id, c]));
-  const lista = (Array.isArray(d.lista) ? d.lista : []).slice(0, 12).map(c => {
-    const id = str(c.id, 40) || 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    let clave = str(c.clave, 100);
-    if (clave === '' || clave === '••••') clave = prev.get(id)?.clave || '';
-    const marca = MARCAS.includes(String(c.marca).toLowerCase()) ? String(c.marca).toLowerCase() : 'foscam';
-    return { id, nombre: str(c.nombre, 40) || 'Domo', marca, host: str(c.host, 60), puerto: numero(c.puerto, 1, 65535, 88), usuario: str(c.usuario, 40) || 'admin', clave };
-  });
-  config.domos.lista = lista;
-  config.domos.sel = Math.max(0, Math.min(Math.max(0, lista.length - 1), numero(d.sel, 0, 100, 0)));
-  if ('paso' in d) config.domos.paso = numero(d.paso, 100, 2000, 400);
   await save();
 }
 async function setConfig(d) {
@@ -228,13 +210,6 @@ const ROUTES = {
   'POST /api/config': d => setConfig(d),
   'POST /api/licencia': d => setLicencia(d),
   'POST /api/layout': d => setLayout(d),
-  'POST /api/domos': d => setDomos(d),
-  'POST /api/domo/probar': async () => { const r = await crearDomo(camActual()).probar(); ultimoLog = ['Cámara OK: ' + (r.nombre || '')]; },
-  'POST /api/domo/mover': async d => { await crearDomo(camActual()).mover(String(d.dir || '')); },
-  'POST /api/domo/zoom': async d => { await crearDomo(camActual()).zoom(String(d.dir || '')); },
-  'POST /api/domo/parar': async () => { await crearDomo(camActual()).parar(); },
-  'POST /api/domo/paso': async d => { await crearDomo(camActual()).paso(String(d.dir || ''), config.domos.paso); },
-  'POST /api/domo/preset': async d => { const dv = crearDomo(camActual()); d.accion === 'guardar' ? await dv.guardarPreset(d.n) : await dv.irPreset(d.n); },
   'POST /api/logos/subir': d => subirLogo(d),
   'POST /api/logos/quitar': d => quitarLogo(d),
   'POST /api/simular': async d => { if (!fuente?.simular) throw Error('Primero cargá el link de los resultados'); await fuente.simular(str(d.bib, 20)); },
@@ -265,16 +240,6 @@ export const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'GET' && url.pathname === '/api/estado') return json(res, 200, estado());
     if (req.method === 'GET' && url.pathname === '/api/graficos') return json(res, 200, graficos());
-    if (req.method === 'GET' && url.pathname === '/domo/snap') {
-      try {
-        const cam = config.domos.lista[Number(url.searchParams.get('idx') ?? config.domos.sel)], dv = crearDomo(cam);
-        if (!dv.snapshot) return json(res, 400, { error: 'Esta cámara no da foto' });
-        const r = await fetch(dv.snapshot(), { signal: AbortSignal.timeout(6000) });
-        const buf = Buffer.from(await r.arrayBuffer());
-        res.writeHead(200, { 'Content-Type': r.headers.get('content-type') || 'image/jpeg', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' });
-        return res.end(buf);
-      } catch (e) { return json(res, 502, { error: e.message }); }
-    }
     if (req.method === 'GET' && url.pathname === '/api/obs/escenas') { try { return json(res, 200, { escenas: await obs.escenas() }); } catch (e) { return json(res, 400, { error: e.message }); } }
     if (req.method === 'POST' && url.pathname === '/api/salir') {
       if (!/^(::ffff:)?127\.|^::1$/.test(req.socket.remoteAddress || '')) return json(res, 403, { error: 'Solo desde esta PC' });
