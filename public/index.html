@@ -55,7 +55,7 @@
   <!-- Columna 3: diseño, logos y salidas -->
   <div class="col">
     <section class="card grow">
-      <nav class="tabs"><button data-tab="dis" class="on">DISEÑO</button><button data-tab="log">LOGOS</button><button data-tab="sal">vMix / OBS</button><button data-tab="lic">LICENCIA</button></nav>
+      <nav class="tabs"><button data-tab="dis" class="on">DISEÑO</button><button data-tab="log">LOGOS</button><button data-tab="sal">vMix / OBS</button><button data-tab="dom">DOMOS</button><button data-tab="lic">LICENCIA</button></nav>
       <div class="tab scroll" id="tab-dis">
         <div class="opts"><label class="grow">Estilo<select id="temaBase"></select></label><button id="guardarTema" class="btn mini" title="Guarda los colores actuales con un nombre">GUARDAR ESTILO</button></div>
         <div class="colores">
@@ -95,6 +95,33 @@
         <div class="out">
           <b>Direcciones (para cargarlas a mano)</b>
           <div id="links" class="links"></div>
+        </div>
+      </div>
+      <div class="tab scroll" id="tab-dom" hidden>
+        <div class="out">
+          <div class="opts"><label class="grow">Cámara<select id="domSel"></select></label><button id="domAdd" class="btn mini">+ CÁMARA</button><button id="domDel" class="btn mini del">ELIMINAR</button></div>
+          <div class="opts"><label class="grow">Nombre<input id="domNom" autocomplete="off"></label><label>Marca<select id="domMarca"></select></label></div>
+          <div class="opts"><label class="grow">IP<input id="domHost" placeholder="192.168.1.50" autocomplete="off"></label><label>Puerto<input id="domPort" type="number"></label></div>
+          <div class="opts"><label>Usuario<input id="domUsr" autocomplete="off"></label><label>Clave<input id="domPwd" type="password" autocomplete="off"></label></div>
+          <div class="row"><button id="domGuardar" class="btn go">GUARDAR CÁMARA</button><button id="domProbar" class="btn">PROBAR</button><button id="domVer" class="btn mini">VER CÁMARA</button></div>
+          <p class="muted" id="domAyuda">Longse/ONVIF se activa cuando conectes esa cámara. Por ahora anda Foscam.</p>
+        </div>
+        <div class="out domctrl">
+          <div class="domcol">
+            <div class="dompad">
+              <button class="dbtn" data-dir="arriba-izq">↖</button><button class="dbtn" data-dir="arriba">↑</button><button class="dbtn" data-dir="arriba-der">↗</button>
+              <button class="dbtn" data-dir="izq">←</button><button id="domStop" class="dbtn stop">■</button><button class="dbtn" data-dir="der">→</button>
+              <button class="dbtn" data-dir="abajo-izq">↙</button><button class="dbtn" data-dir="abajo">↓</button><button class="dbtn" data-dir="abajo-der">↘</button>
+            </div>
+            <div class="opts"><button class="dbtn zoom" data-zoom="mas">ZOOM +</button><button class="dbtn zoom" data-zoom="menos">ZOOM −</button><label>Paso<select id="domPaso"><option value="200">corto</option><option value="400">medio</option><option value="800">largo</option></select></label></div>
+            <p class="muted">Mantené apretada la flecha para mover; soltá para parar.</p>
+          </div>
+          <div class="domvista"><img id="domImg" alt=""><span class="muted" id="domImgMsg">Tocá VER CÁMARA</span></div>
+        </div>
+        <div class="out">
+          <b>Posiciones guardadas</b>
+          <div class="opts preset-fila"><span class="muted">Ir a:</span><span id="domIr" class="preset-row"></span></div>
+          <div class="opts preset-fila"><span class="muted">Guardar acá:</span><span id="domGuardarP" class="preset-row"></span></div>
         </div>
       </div>
       <div class="tab scroll" id="tab-lic" hidden>

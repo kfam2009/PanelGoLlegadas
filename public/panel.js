@@ -72,6 +72,21 @@ function render() {
     $('#licInfo').textContent = L.ok ? `Cliente: ${L.cliente || '—'}${L.hasta ? ' · válida hasta ' + L.hasta : ''}` : (L.motivo || 'Sin licencia · marca de agua');
     setVal('#licToken', C.licencia || '');
   }
+  // Domos
+  const DM = C.domos;
+  if ($('#domSel') && DM) {
+    const selOpc = (sel, pairs, val) => { const e = $(sel); if (focused(e)) return; const k = JSON.stringify(pairs); if (e.dataset.k !== k) { e.dataset.k = k; e.replaceChildren(...pairs.map(([v, l]) => new Option(l, v))); } e.value = String(val); };
+    selOpc('#domSel', DM.lista.map((c, i) => [i, c.nombre || ('Domo ' + (i + 1))]), DM.sel);
+    if (!focused('#domMarca') && $('#domMarca').dataset.k !== JSON.stringify(DM.marcas)) { $('#domMarca').dataset.k = JSON.stringify(DM.marcas); $('#domMarca').replaceChildren(...DM.marcas.map(m => new Option(m === 'foscam' ? 'Foscam' : 'Longse / ONVIF', m))); }
+    const cam = DM.lista[DM.sel];
+    if (cam) { setVal('#domNom', cam.nombre); if (!focused('#domMarca')) $('#domMarca').value = cam.marca; setVal('#domHost', cam.host); setVal('#domPort', cam.puerto); setVal('#domUsr', cam.usuario); setVal('#domPwd', cam.clave); }
+    if (!focused('#domPaso')) $('#domPaso').value = DM.paso;
+    if (!$('#domIr').children.length) {
+      for (const n of [1, 2, 3, 4, 5, 6]) { const b = el('button', null, String(n)); b.onclick = () => cmd('domo/preset', { accion: 'ir', n }); $('#domIr').appendChild(b); }
+      $('#domGuardarP').classList.add('guardar');
+      for (const n of [1, 2, 3, 4, 5, 6]) { const b = el('button', null, String(n)); b.onclick = async () => { await cmd('domo/preset', { accion: 'guardar', n }); toast('Posición ' + n + ' guardada'); }; $('#domGuardarP').appendChild(b); }
+    }
+  }
   setVal('#pTitulo', C.posiciones.titulo); setVal('#rTitulo', C.reloj.titulo);
   // Logos
   if (changed('logos', C.logos)) {
@@ -144,6 +159,40 @@ $('#guardarTema').onclick = () => { const n = prompt('Nombre para este estilo (e
 for (const i of $$('[data-x]')) i.onchange = () => cfg({ textos: { [i.dataset.x]: i.value } });
 $('#licAplicar').onclick = () => act('licencia', { token: $('#licToken').value.trim() }, 'Licencia actualizada');
 $('#licQuitar').onclick = () => { $('#licToken').value = ''; act('licencia', { token: '' }, 'Licencia quitada'); };
+
+// ---- Domos (PTZ) ----
+const cmd = (route, data) => fetch('/api/' + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) }).then(r => r.ok ? null : r.json().then(j => { throw Error(j.error); })).catch(e => { if (e && e.message) toast(e.message); });
+const domLista = () => structuredClone(st.config.domos.lista);
+$('#domSel').onchange = () => act('domos', { lista: st.config.domos.lista, sel: Number($('#domSel').value), paso: st.config.domos.paso });
+$('#domAdd').onclick = () => { const l = domLista(); l.push({ nombre: 'Domo ' + (l.length + 1), marca: 'foscam', host: '', puerto: 88, usuario: 'admin', clave: '' }); act('domos', { lista: l, sel: l.length - 1, paso: st.config.domos.paso }); };
+$('#domDel').onclick = () => { const l = domLista(); if (!l.length) return; l.splice(st.config.domos.sel, 1); act('domos', { lista: l, sel: Math.max(0, st.config.domos.sel - 1), paso: st.config.domos.paso }); };
+$('#domGuardar').onclick = () => {
+  const l = domLista(), i = st.config.domos.sel;
+  if (!l[i]) return toast('Agregá una cámara primero (+ CÁMARA)');
+  l[i] = { ...l[i], nombre: $('#domNom').value, marca: $('#domMarca').value, host: $('#domHost').value.trim(), puerto: Number($('#domPort').value) || 88, usuario: $('#domUsr').value, clave: $('#domPwd').value };
+  act('domos', { lista: l, sel: i, paso: Number($('#domPaso').value) }, 'Cámara guardada');
+};
+$('#domProbar').onclick = () => act('domo/probar', {}, 'Probando la cámara...');
+$('#domPaso').onchange = () => act('domos', { lista: st.config.domos.lista, sel: st.config.domos.sel, paso: Number($('#domPaso').value) });
+for (const b of $$('.dbtn[data-dir]')) {
+  const ini = e => { e.preventDefault(); b.classList.add('act'); cmd('domo/mover', { dir: b.dataset.dir }); };
+  const fin = () => { if (!b.classList.contains('act')) return; b.classList.remove('act'); cmd('domo/parar'); };
+  b.addEventListener('pointerdown', ini); b.addEventListener('pointerup', fin); b.addEventListener('pointerleave', fin); b.addEventListener('pointercancel', fin);
+}
+for (const b of $$('.dbtn.zoom')) {
+  const ini = e => { e.preventDefault(); b.classList.add('act'); cmd('domo/zoom', { dir: b.dataset.zoom }); };
+  const fin = () => { if (!b.classList.contains('act')) return; b.classList.remove('act'); cmd('domo/parar'); };
+  b.addEventListener('pointerdown', ini); b.addEventListener('pointerup', fin); b.addEventListener('pointerleave', fin); b.addEventListener('pointercancel', fin);
+}
+$('#domStop').onclick = () => cmd('domo/parar');
+let domTimer = null;
+$('#domVer').onclick = () => {
+  if (domTimer) { clearInterval(domTimer); domTimer = null; $('#domImg').classList.remove('on'); $('#domImgMsg').textContent = 'Tocá VER CÁMARA'; $('#domVer').classList.remove('on'); return; }
+  $('#domImg').onload = () => { $('#domImg').classList.add('on'); $('#domImgMsg').textContent = ''; };
+  $('#domImg').onerror = () => { $('#domImg').classList.remove('on'); $('#domImgMsg').textContent = 'No llega imagen'; };
+  const refrescar = () => { $('#domImg').src = '/domo/snap?idx=' + st.config.domos.sel + '&t=' + Date.now(); };
+  refrescar(); domTimer = setInterval(refrescar, 1500); $('#domVer').classList.add('on');
+};
 for (const t of $$('.tabs button')) t.onclick = () => { for (const b of $$('.tabs button')) b.classList.toggle('on', b === t); for (const p of $$('.tab')) p.hidden = p.id !== 'tab-' + t.dataset.tab; };
 // logos
 const leerImagen = f => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(f); });
